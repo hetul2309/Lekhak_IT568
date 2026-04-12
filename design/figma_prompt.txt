@@ -1,0 +1,173 @@
+Consider me as a Software Engineering Student, i want to make a prototype design for a project "Blogging Platform". It's name is "Lekhak". So, i want a wireframed prototype design. Give me design for 6 pages as mentioned below and connect them also.
+1. Login Page
+Design a modern login page for a blogging platform inspired by a soft purple SaaS UI.
+
+Layout:
+- Centered login card with rounded corners (very smooth, like 2xl–4xl)
+- Background with subtle gradient and blurred circular shapes (glassmorphism effect)
+- Top section with heading:
+  "Welcome back" and a short subtitle
+
+Form:
+- Email input with icon inside
+- Password input with show/hide toggle
+- Google login button at top
+- Divider with "or"
+- Login button (rounded, gradient purple)
+
+Extras:
+- Link for signup and forgot password
+- Smooth shadows and hover effects
+
+Style:
+- Use soft purple gradient (#6C5CE7)
+- Clean typography
+- Slight blur background card
+- Responsive design
+
+2. Signup Page
+Design a multi-step signup page for a blogging platform with OTP verification.
+
+Layout:
+- Centered card with glassmorphism effect
+- Background with soft purple glowing shapes
+
+Step 1:
+- Fields: name, username, email, password, confirm password
+- Username availability indicator (real-time feedback)
+- Password validation hints
+
+Step 2:
+- OTP verification screen
+- 6-digit input
+- Resend OTP with timer
+
+UI:
+- Smooth transitions between steps
+- Clear feedback messages (success/error)
+
+Style:
+- Modern SaaS UI
+- Rounded inputs and buttons
+- Purple gradient accents
+- Soft shadows and blur effects
+
+3. Home Feed Page
+Design a home feed page for a blogging platform with personalized content.
+
+Layout:
+- Fixed top navigation bar:
+  - Logo on left
+  - Search bar in center
+  - Profile avatar and "Write" button on right
+
+Main Section:
+- Category filter bar (horizontal scroll)
+- Feed tabs: Latest, Following, Personalized
+- Featured blog section at top (large card)
+- Grid of blog cards below
+
+Blog Card Design:
+- Image thumbnail
+- Category badge on top
+- Title and short description
+- Author, date
+- Engagement icons (likes, comments, views)
+- Hover animation (slight lift + zoom image)
+
+Style:
+- Clean card-based layout
+- White cards with soft shadows
+- Purple accent colors
+- Spacious layout for readability
+
+4. Blog Detail Page
+Design a blog detail page for a reading-focused blogging platform.
+
+Layout:
+- Large featured image at top with overlay gradient
+- Category pills on image
+- Big bold blog title
+
+Below:
+- Author section with avatar and details
+- Metadata: date, reading time, views
+
+Content Section:
+- Clean typography for long-form reading
+- Medium-width centered layout
+- Paragraph spacing optimized for readability
+
+Interactions:
+- Like, save, share buttons
+- AI summary button
+- Comment section below
+
+Extras:
+- Related/recommended posts section
+
+Style:
+- Minimal and content-first
+- Elegant typography
+- Soft shadows and rounded sections
+
+5. Create Blog Page
+Design a blog editor page for content creators with AI assistance.
+
+Layout:
+- Top bar with back button and actions
+- Main editor card layout
+
+Fields:
+- Title input
+- Rich text editor area
+- Category selector (multi-select)
+- Image upload with preview
+
+Actions:
+- Save draft button
+- Publish button
+- AI buttons:
+  - Auto categorize
+  - Generate description
+
+Extras:
+- Moderation warning panel (if content flagged)
+- Auto-save indicator
+
+Style:
+- Clean writing-focused UI
+- Minimal distractions
+- Soft purple highlights
+- Card-based layout
+
+6. Admin Dashboard
+Design an admin dashboard for managing reported content in a blogging platform.
+
+Layout:
+- Header with title "Report Center"
+- Stats card showing total reports
+
+Main Section:
+- List of report cards
+
+Each Report Card:
+- Blog title
+- Report reason
+- Reporter info
+- Timestamp
+- Action buttons:
+  - Approve
+  - Delete
+  - Ban
+
+Style:
+- Clean dashboard UI
+- Use cards instead of tables
+- Color coding:
+  - Red for danger
+  - Green for resolved
+
+UX:
+- Loading state
+- Empty state ("All clear")

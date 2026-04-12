@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== Global Theme (Coral Sunset Override) ===== */
+:root {
+  --background: #fdfbfb;
+  --foreground: #1a1a1a;
+
+  --card: rgba(255, 255, 255, 0.8);
+  --border: rgba(0, 0, 0, 0.1);
+
+  --input-background: #f3f3f5;
+
+  --primary: #FF6A00;
+  --primary-foreground: #ffffff;
+
+  --muted: #ececf0;
+  --muted-foreground: #717182;
+
+  --ring: rgba(255, 106, 0, 0.3);
+
+  /* Gradient Theme */
+  --gradient-primary: linear-gradient(90deg, #FF6A00, #FF2D8D);
+}
+
+/* Apply globally */
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Reusable button */
+.btn-primary {
+  background: var(--gradient-primary);
+  color: white;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
