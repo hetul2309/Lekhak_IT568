@@ -2,9 +2,10 @@ import { useState } from "react";
 import { CiMail, CiUser } from "react-icons/ci";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import { FcGoogle } from "react-icons/fc";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function Signup() {
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
     username: "",
@@ -61,9 +62,24 @@ function Signup() {
     setErrors(validate(updatedForm));
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const validationErrors = validate(form);
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length === 0) {
+      localStorage.setItem("isLoggedIn", "true");
+      navigate("/");
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
-      <form className="w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 space-y-6 backdrop-blur-md shadow-sm">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 space-y-6 backdrop-blur-md shadow-sm"
+      >
 
         {/* Header */}
         <div className="text-center space-y-2">
@@ -216,7 +232,7 @@ function Signup() {
         {/* Button */}
         <button
           type="submit"
-          className="w-full py-3 rounded-xl bg-primary-gradient text-white font-semibold"
+          className="w-full py-3 rounded-xl bg-gradient-primary text-primary-foreground font-semibold"
         >
           Sign up
         </button>

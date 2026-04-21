@@ -2,10 +2,16 @@ import { useState } from "react";
 import { CiMail } from "react-icons/ci";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import { FcGoogle } from "react-icons/fc";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function Login() {
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogin = () => {
+    localStorage.setItem("isLoggedIn", "true");
+    navigate("/");
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
@@ -76,7 +82,10 @@ function Login() {
           </div>
 
           {/* Button */}
-          <button className="w-full py-3 rounded-xl bg-primary-gradient text-white font-semibold shadow-md transition hover:opacity-90">
+          <button
+            onClick={handleLogin}
+            className="w-full py-3 rounded-xl bg-gradient-primary text-primary-foreground font-semibold shadow-md transition hover:opacity-90"
+          >
             Sign in
           </button>
 
