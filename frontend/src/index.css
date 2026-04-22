@@ -139,7 +139,7 @@ All colors MUST be HSL.
     -webkit-text-fill-color: transparent;
   }
   .glass {
-    @apply bg-[var(--card)] backdrop-blur-xl border border-border/60;
+    @apply bg-white/90 backdrop-blur-xl border border-white/60;
   }
   .shadow-glow {
     box-shadow: var(--shadow-glow);
