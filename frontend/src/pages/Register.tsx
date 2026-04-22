@@ -1,158 +1,151 @@
 import { useState } from "react";
-import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { Loader2, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { useToast } from "@/hooks/use-toast";
+import { Mail, Eye, EyeOff } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 
 const Register = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { toast } = useToast();
-  const { register, isAuthenticated, isLoading } = useAuth();
-  const [displayName, setDisplayName] = useState("");
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
-  const params = new URLSearchParams(location.search);
-  const next = params.get("next") || "/";
+  const [form, setForm] = useState({
+    name: "",
+    username: "",
+    email: "",
+    password: "",
+    confirm: "",
+  });
 
-  if (!isLoading && isAuthenticated) {
-    return <Navigate to={next} replace />;
-  }
+  const [errors, setErrors] = useState<any>({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(null);
-    setSubmitting(true);
+  const validate = (data: typeof form) => {
+    let newErrors: any = {};
 
-    try {
-      await register({
-        displayName: displayName || username,
-        username,
-        email,
-        password,
-      });
-      toast({
-        variant: "success",
-        title: "Account created",
-        description: "You are ready to start writing.",
-      });
-      navigate(next, { replace: true });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
-    } finally {
-      setSubmitting(false);
+    if (!data.name) newErrors.name = "Name required";
+    if (!data.username) newErrors.username = "Username required";
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.email)) {
+      newErrors.email = "Invalid email";
+    }
+
+    if (data.password.length < 6) {
+      newErrors.password = "Minimum 6 characters";
+    }
+
+    if (data.password !== data.confirm) {
+      newErrors.confirm = "Passwords do not match";
+    }
+
+    return newErrors;
+  };
+
+  const handleChange = (field: keyof typeof form, value: string) => {
+    const updated = { ...form, [field]: value };
+    setForm(updated);
+    setErrors(validate(updated));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const validationErrors = validate(form);
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length === 0) {
+      localStorage.setItem("isLoggedIn", "true");
+      navigate("/");
     }
   };
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,_rgba(251,191,36,0.18),_transparent_30%),linear-gradient(180deg,rgba(255,251,235,0.92),rgba(255,255,255,1))] px-4 py-10">
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-6xl items-center gap-10 lg:grid lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="hidden lg:block space-y-6 pr-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/70 px-4 py-2 text-sm text-muted-foreground backdrop-blur">
-            <Sparkles className="h-4 w-4 text-primary" />
-            Join the writing community
-          </div>
-          <h1 className="max-w-xl text-5xl font-bold leading-tight tracking-tight">
-            Create your account and make the frontend feel like a real product.
-          </h1>
-          <p className="max-w-xl text-lg text-muted-foreground">
-            Registration now stores your session locally, restores it on refresh, and unlocks authenticated actions like publishing, liking, and commenting.
-          </p>
-        </section>
+    <div className="min-h-screen flex items-center justify-center px-4 py-8">
+      <form onSubmit={handleSubmit} className="w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 space-y-6">
 
-        <Card className="w-full max-w-md border-border/60 bg-background/90 shadow-card backdrop-blur-xl">
-          <CardHeader className="space-y-2">
-            <CardTitle>Create account</CardTitle>
-            <CardDescription>Choose a username, add your email, and start writing.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertTitle>Could not create account</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+        <div className="text-center">
+          <h1 className="text-3xl font-semibold text-primary">Lekhak</h1>
+          <h2 className="text-xl">Create your account</h2>
+        </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="displayName">Display name</Label>
-                <Input
-                  id="displayName"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="How readers will see you"
-                  autoComplete="name"
-                />
-              </div>
+        <button type="button" className="w-full flex items-center justify-center gap-2 border rounded-xl py-2.5">
+          <span>Continue with Google</span>
+        </button>
 
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="writername"
-                  autoComplete="username"
-                  required
-                />
-              </div>
+        <div className="flex items-center gap-3">
+          <div className="flex-1 border-t"></div>
+          <span className="text-xs">or</span>
+          <div className="flex-1 border-t"></div>
+        </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="register-email">Email</Label>
-                <Input
-                  id="register-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  required
-                />
-              </div>
+        <input
+          type="text"
+          placeholder="Full name"
+          value={form.name}
+          onChange={(e) => handleChange("name", e.target.value)}
+          className="w-full px-4 py-2.5 rounded-xl border"
+        />
+        {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
 
-              <div className="space-y-2">
-                <Label htmlFor="register-password">Password</Label>
-                <Input
-                  id="register-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create a password"
-                  autoComplete="new-password"
-                  minLength={6}
-                  required
-                />
-              </div>
+        <input
+          type="text"
+          placeholder="Username"
+          value={form.username}
+          onChange={(e) => handleChange("username", e.target.value)}
+          className="w-full px-4 py-2.5 rounded-xl border"
+        />
+        {errors.username && <p className="text-red-500 text-sm">{errors.username}</p>}
 
-              <Button
-                type="submit"
-                disabled={submitting}
-                className="w-full rounded-full bg-gradient-primary text-primary-foreground hover:opacity-90"
-              >
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                {submitting ? "Creating account..." : "Register"}
-              </Button>
+        <div className="relative">
+          <input
+            type="email"
+            placeholder="Email"
+            value={form.email}
+            onChange={(e) => handleChange("email", e.target.value)}
+            className="w-full px-4 py-2.5 pr-10 rounded-xl border"
+          />
+          <Mail className="absolute right-3 top-1/2 -translate-y-1/2" />
+        </div>
+        {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
 
-              <p className="text-center text-sm text-muted-foreground">
-                Already have an account?{" "}
-                <Link to={`/login?next=${encodeURIComponent(next)}`} className="font-medium text-primary hover:underline">
-                  Login
-                </Link>
-              </p>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    </main>
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            value={form.password}
+            onChange={(e) => handleChange("password", e.target.value)}
+            className="w-full px-4 py-2.5 pr-10 rounded-xl border"
+          />
+          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2">
+            {showPassword ? <EyeOff /> : <Eye />}
+          </button>
+        </div>
+        {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
+
+        <div className="relative">
+          <input
+            type={showConfirm ? "text" : "password"}
+            placeholder="Confirm password"
+            value={form.confirm}
+            onChange={(e) => handleChange("confirm", e.target.value)}
+            className="w-full px-4 py-2.5 pr-10 rounded-xl border"
+          />
+          <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2">
+            {showConfirm ? <EyeOff /> : <Eye />}
+          </button>
+        </div>
+        {errors.confirm && <p className="text-red-500 text-sm">{errors.confirm}</p>}
+
+        <button type="submit" className="w-full py-3 rounded-xl bg-gradient-primary text-white font-semibold">
+          Sign up
+        </button>
+
+        <p className="text-sm text-center">
+          Already have an account?{" "}
+          <Link to="/login" className="text-primary">
+            Login
+          </Link>
+        </p>
+
+      </form>
+    </div>
   );
 };
 
