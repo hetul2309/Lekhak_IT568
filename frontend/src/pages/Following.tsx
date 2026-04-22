@@ -1,28 +1,52 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Sparkles, UserMinus, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { currentUserProfile, followingProfiles } from "@/data/mockSocial";
+import { useToast } from "@/hooks/use-toast";
+import { fetchProfilesByIds, mapUserToProfileSummary, toggleFollowUser } from "@/lib/social-api";
 
 const Following = () => {
   const navigate = useNavigate();
-  const [followingList, setFollowingList] = useState(followingProfiles);
+  const { user, refreshUser } = useAuth();
+  const { toast } = useToast();
+  const { data: followingList = [] } = useQuery({
+    queryKey: ["following", user?._id, user?.following],
+    queryFn: () => fetchProfilesByIds(user?.following || []),
+    enabled: Boolean(user?._id),
+  });
+  const currentUserProfile = user ? mapUserToProfileSummary(user) : null;
+
+  const unfollowMutation = useMutation({
+    mutationFn: (userId: string) => toggleFollowUser(userId),
+    onSuccess: async () => {
+      await refreshUser();
+      toast({
+        variant: "success",
+        title: "Updated following list",
+        description: "Your following list is now up to date.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Unfollow failed",
+        description: error.message,
+      });
+    },
+  });
 
   const totalFollowing = followingList.length;
-
   const formattedTotal = useMemo(() => {
     if (totalFollowing >= 1000) return `${(totalFollowing / 1000).toFixed(1)}k`;
     return totalFollowing.toString();
   }, [totalFollowing]);
-
-  const handleUnfollow = (userId: string) => {
-    setFollowingList((prev) => prev.filter((user) => user.id !== userId));
-  };
 
   return (
     <SidebarProvider defaultOpen>
@@ -78,39 +102,39 @@ const Following = () => {
                 </Card>
               ) : (
                 <div className="space-y-4">
-                  {followingList.map((user) => (
+                  {followingList.map((profile) => (
                     <Card
-                      key={user.id}
+                      key={profile.id}
                       className="rounded-[1.75rem] border border-border/60 bg-card/95 p-6 shadow-card transition-smooth hover:border-primary/30 hover:shadow-glow"
                     >
                       <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                         <button
                           type="button"
                           className="flex flex-1 items-start gap-4 text-left"
-                          onClick={() => navigate(`/profile/${user.id}`)}
+                          onClick={() => navigate(`/profile/${profile.id}`)}
                         >
                           <Avatar className="h-16 w-16 border border-border/60 shadow-sm">
                             <AvatarFallback className="bg-gradient-primary text-primary-foreground font-semibold text-base">
-                              {user.initials}
+                              {profile.initials}
                             </AvatarFallback>
                           </Avatar>
 
                           <div className="flex-1 min-w-0 space-y-2">
                             <div className="flex items-center gap-3 flex-wrap">
-                              <h3 className="text-lg font-semibold truncate">{user.name}</h3>
-                              {user.role === "Admin" && (
+                              <h3 className="text-lg font-semibold truncate">{profile.name}</h3>
+                              {profile.role === "Admin" && (
                                 <span className="rounded-full bg-success/15 px-3 py-1 text-xs font-semibold text-success">
                                   Admin
                                 </span>
                               )}
                             </div>
 
-                            <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                            <p className="text-sm text-muted-foreground">{user.bio}</p>
+                            <p className="text-sm text-muted-foreground truncate">{profile.email}</p>
+                            <p className="text-sm text-muted-foreground">{profile.bio}</p>
 
                             <div className="flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.35em] text-muted-foreground">
-                              <span className="rounded-full bg-muted px-3 py-1">Followers · {user.followers}</span>
-                              <span className="rounded-full bg-muted px-3 py-1">Stories · {user.blogs}</span>
+                              <span className="rounded-full bg-muted px-3 py-1">Followers · {profile.followers}</span>
+                              <span className="rounded-full bg-muted px-3 py-1">Stories · {profile.blogs}</span>
                             </div>
                           </div>
                         </button>
@@ -118,13 +142,13 @@ const Following = () => {
                         <div className="flex flex-col gap-2 sm:flex-row">
                           <Button
                             variant="ghost"
-                            onClick={() => navigate(`/profile/${user.id}`)}
+                            onClick={() => navigate(`/profile/${profile.id}`)}
                             className="rounded-full px-6 text-sm text-primary hover:bg-accent/40"
                           >
                             View profile
                           </Button>
                           <Button
-                            onClick={() => handleUnfollow(user.id)}
+                            onClick={() => unfollowMutation.mutate(profile.id)}
                             className="rounded-full bg-gradient-primary px-6 text-sm text-primary-foreground hover:opacity-90"
                           >
                             Unfollow
@@ -138,7 +162,7 @@ const Following = () => {
 
               <Card className="border-border/60 p-5 shadow-card">
                 <p className="text-sm text-muted-foreground">
-                  Logged in as <span className="font-medium text-foreground">{currentUserProfile.name}</span>
+                  Logged in as <span className="font-medium text-foreground">{currentUserProfile?.name || "Lekhak user"}</span>
                 </p>
               </Card>
             </section>

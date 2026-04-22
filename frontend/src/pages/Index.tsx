@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
@@ -8,6 +9,7 @@ import FeedTabs, { FeedTab } from "@/components/dashboard/FeedTabs";
 import BlogFeedCard from "@/components/dashboard/BlogFeedCard";
 import { Button } from "@/components/ui/button";
 import { mockPosts } from "@/data/mockPosts";
+import { fetchBlogs, fetchTrendingBlogs } from "@/lib/blog-api";
 
 const PAGE_SIZE = 4;
 
@@ -15,18 +17,25 @@ const Dashboard = () => {
   const [tab, setTab] = useState<FeedTab>("latest");
   const [visible, setVisible] = useState(PAGE_SIZE);
 
-  const trending = useMemo(
-    () => mockPosts.filter((p) => p.trending).slice(0, 4),
-    [],
-  );
+  const { data: liveFeed = [], isLoading: feedLoading, isError: feedError } = useQuery({
+    queryKey: ["blogs", "feed"],
+    queryFn: () => fetchBlogs(12),
+  });
 
-  const feed = useMemo(() => {
-    // For now all tabs show the same list (latest). Hook for future filtering.
-    return mockPosts;
-  }, [tab]);
+  const { data: liveTrending = [] } = useQuery({
+    queryKey: ["blogs", "trending"],
+    queryFn: () => fetchTrendingBlogs(4),
+  });
 
-  const shown = feed.slice(0, visible);
-  const hasMore = visible < feed.length;
+  const feed = liveFeed.length > 0 ? liveFeed : mockPosts;
+  const trending = liveTrending.length > 0
+    ? liveTrending
+    : feed.filter((p) => p.trending).slice(0, 4);
+
+  const filteredFeed = tab === "latest" ? feed : feed;
+
+  const shown = filteredFeed.slice(0, visible);
+  const hasMore = visible < filteredFeed.length;
 
   return (
     <SidebarProvider defaultOpen>
@@ -51,6 +60,18 @@ const Dashboard = () => {
                   }}
                 />
               </div>
+
+              {feedLoading && (
+                <p className="text-sm text-muted-foreground">
+                  Loading latest blogs...
+                </p>
+              )}
+
+              {feedError && (
+                <p className="text-sm text-muted-foreground">
+                  Backend feed is unavailable right now, so the dashboard is showing local sample posts.
+                </p>
+              )}
 
               <div className="space-y-4">
                 {shown.map((post) => (

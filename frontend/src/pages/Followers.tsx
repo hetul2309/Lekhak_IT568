@@ -1,14 +1,24 @@
+import { useQuery } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { currentUserProfile, followerProfiles } from "@/data/mockSocial";
+import { fetchProfilesByIds, mapUserToProfileSummary } from "@/lib/social-api";
 
 const Followers = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { data: followers = [] } = useQuery({
+    queryKey: ["followers", user?._id, user?.followers],
+    queryFn: () => fetchProfilesByIds(user?.followers || []),
+    enabled: Boolean(user?._id),
+  });
+
+  const currentUserProfile = user ? mapUserToProfileSummary(user) : null;
 
   return (
     <SidebarProvider defaultOpen>
@@ -21,11 +31,11 @@ const Followers = () => {
             <section className="space-y-1">
               <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Followers</h1>
               <p className="text-sm text-muted-foreground">
-                {followerProfiles.length} {followerProfiles.length === 1 ? "person" : "people"} following you.
+                {followers.length} {followers.length === 1 ? "person" : "people"} following you.
               </p>
             </section>
 
-            {followerProfiles.length === 0 ? (
+            {followers.length === 0 ? (
               <Card className="border-border/60 p-10 text-center shadow-card">
                 <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-accent text-primary">
                   <UserPlus className="h-10 w-10" />
@@ -37,7 +47,7 @@ const Followers = () => {
               </Card>
             ) : (
               <div className="grid gap-4">
-                {followerProfiles.map((follower) => (
+                {followers.map((follower) => (
                   <button
                     key={follower.id}
                     type="button"
@@ -66,7 +76,7 @@ const Followers = () => {
 
             <Card className="border-border/60 p-5 shadow-card">
               <p className="text-sm text-muted-foreground">
-                Your account: <span className="font-medium text-foreground">{currentUserProfile.name}</span>
+                Your account: <span className="font-medium text-foreground">{currentUserProfile?.name || "Lekhak user"}</span>
               </p>
             </Card>
           </main>

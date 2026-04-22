@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Search, BookmarkCheck, ArrowUpDown, Layers3 } from "lucide-react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
@@ -15,23 +16,23 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { mockPosts } from "@/data/mockPosts";
-
-const SAVED_POST_IDS = ["1", "2", "3", "5", "7", "10"];
+import { fetchSavedBlogs } from "@/lib/social-api";
 
 const SavedBlogs = () => {
-  const savedPosts = useMemo(
-    () => mockPosts.filter((post) => SAVED_POST_IDS.includes(post.id)),
-    [],
-  );
-  const categories = useMemo(
-    () => Array.from(new Set(savedPosts.flatMap((post) => post.categories))).sort(),
-    [savedPosts],
-  );
+  const { data: livePosts = [] } = useQuery({
+    queryKey: ["saved-blogs"],
+    queryFn: fetchSavedBlogs,
+  });
 
   const [query, setQuery] = useState("");
   const [categorySearch, setCategorySearch] = useState("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const savedPosts = useMemo(() => (livePosts.length > 0 ? livePosts : []), [livePosts]);
+  const categories = useMemo(
+    () => Array.from(new Set(savedPosts.flatMap((post) => post.categories))).sort(),
+    [savedPosts],
+  );
 
   const visibleCategoryOptions = useMemo(() => {
     const search = categorySearch.toLowerCase().trim();
@@ -49,14 +50,9 @@ const SavedBlogs = () => {
           post.title.toLowerCase().includes(normalizedQuery) ||
           post.author.toLowerCase().includes(normalizedQuery) ||
           post.preview.toLowerCase().includes(normalizedQuery) ||
-          post.categories.some((category) =>
-            category.toLowerCase().includes(normalizedQuery),
-          );
+          post.categories.some((category) => category.toLowerCase().includes(normalizedQuery));
 
-        const matchesCategorySearch =
-          categorySearch === "all" ||
-          post.categories.includes(categorySearch);
-
+        const matchesCategorySearch = categorySearch === "all" || post.categories.includes(categorySearch);
         const matchesSelectedCategories =
           selectedCategories.length === 0 ||
           post.categories.some((category) => selectedCategories.includes(category));
@@ -102,12 +98,8 @@ const SavedBlogs = () => {
                       <BookmarkCheck className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                        Saved blogs
-                      </p>
-                      <p className="text-2xl md:text-3xl font-semibold tracking-tight">
-                        {filteredPosts.length}
-                      </p>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Saved blogs</p>
+                      <p className="text-2xl md:text-3xl font-semibold tracking-tight">{filteredPosts.length}</p>
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground">
@@ -132,10 +124,7 @@ const SavedBlogs = () => {
                     />
                   </div>
 
-                  <Select
-                    value={categorySearch}
-                    onValueChange={(value) => setCategorySearch(value)}
-                  >
+                  <Select value={categorySearch} onValueChange={(value) => setCategorySearch(value)}>
                     <SelectTrigger className="h-12 rounded-full">
                       <SelectValue placeholder="Search by category" />
                     </SelectTrigger>
@@ -149,10 +138,7 @@ const SavedBlogs = () => {
                     </SelectContent>
                   </Select>
 
-                  <Select
-                    value={sortOrder}
-                    onValueChange={(value: "newest" | "oldest") => setSortOrder(value)}
-                  >
+                  <Select value={sortOrder} onValueChange={(value: "newest" | "oldest") => setSortOrder(value)}>
                     <SelectTrigger className="h-12 rounded-full">
                       <SelectValue placeholder="Sort blogs" />
                     </SelectTrigger>
@@ -225,7 +211,7 @@ const SavedBlogs = () => {
                 <Card className="border-border/60 p-8 text-center shadow-card">
                   <h3 className="text-lg font-semibold">No saved blogs found</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Try another keyword, switch category filters, or reset to all categories.
+                    Save a few posts from the feed first, or adjust your filters.
                   </p>
                 </Card>
               )}
