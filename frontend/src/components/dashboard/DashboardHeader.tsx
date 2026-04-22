@@ -1,5 +1,6 @@
 import { PenSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import NotificationMenu from "@/components/dashboard/NotificationMenu";
@@ -7,13 +8,14 @@ import ProfileMenu from "@/components/dashboard/ProfileMenu";
 
 const DashboardHeader = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   return (
     <header className="sticky top-0 z-30 h-16 flex items-center gap-2 px-3 md:px-6 border-b border-border/60 bg-background/80 backdrop-blur-xl">
       <SidebarTrigger className="h-9 w-9" />
 
       <div className="ml-auto flex items-center gap-2">
         <Button
-          onClick={() => navigate("/write")}
+          onClick={() => navigate(isAuthenticated ? "/write" : "/login?next=/write")}
           className="hidden sm:inline-flex bg-gradient-primary text-primary-foreground hover:opacity-90 transition-smooth shadow-glow rounded-full"
           size="sm"
         >
@@ -21,7 +23,7 @@ const DashboardHeader = () => {
           Write Blog
         </Button>
         <Button
-          onClick={() => navigate("/write")}
+          onClick={() => navigate(isAuthenticated ? "/write" : "/login?next=/write")}
           size="icon"
           variant="ghost"
           className="sm:hidden rounded-full bg-gradient-primary text-primary-foreground hover:opacity-90"

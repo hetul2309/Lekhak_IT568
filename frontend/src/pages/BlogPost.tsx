@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -18,6 +19,12 @@ import { cn } from "@/lib/utils";
 import { getPostById, getRecommendedPosts } from "@/data/mockPosts";
 import CommentsDialog from "@/components/comments/CommentsDialog";
 import ReportDialog from "@/components/report/ReportDialog";
+import { fetchBlogById, fetchBlogs, fetchComments, toggleLike } from "@/lib/blog-api";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { getCurrentUserIdFromToken, hasStoredAuthToken } from "@/lib/auth";
+import { sanitizeRichText } from "@/lib/rich-text";
+import { fetchSavedBlogs, toggleFollowUser, toggleSavedBlog } from "@/lib/social-api";
+import { useToast } from "@/hooks/use-toast";
 
 const MAX_REFRESHES = 3;
 
@@ -29,16 +36,48 @@ const FALLBACK_SUMMARIES = [
 ];
 
 const BlogPostPage = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { isAuthenticated, user, refreshUser } = useAuth();
   const { id } = useParams<{ id: string }>();
-  const post = useMemo(() => (id ? getPostById(id) : undefined), [id]);
-  const recommendations = useMemo(
-    () => (post ? getRecommendedPosts(post.id, 3) : []),
-    [post],
-  );
+  const fallbackPost = id ? getPostById(id) : undefined;
+  const currentUserId = getCurrentUserIdFromToken();
+  const {
+    data: livePost,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["blogs", "detail", id],
+    queryFn: () => fetchBlogById(id as string),
+    enabled: Boolean(id),
+  });
+  const { data: liveRecommendations = [] } = useQuery({
+    queryKey: ["blogs", "recommendations", id],
+    queryFn: () => fetchBlogs(4),
+    enabled: Boolean(id),
+  });
+  const { data: comments = [] } = useQuery({
+    queryKey: ["blogs", "comments", id],
+    queryFn: () => fetchComments(id as string),
+    enabled: Boolean(id),
+  });
+  const { data: savedBlogs = [] } = useQuery({
+    queryKey: ["saved-blogs"],
+    queryFn: fetchSavedBlogs,
+    enabled: isAuthenticated,
+  });
+
+  const post = livePost || fallbackPost;
+  const recommendations =
+    liveRecommendations.filter((item) => item.id !== id).slice(0, 3) ||
+    (post ? getRecommendedPosts(post.id, 3) : []);
 
   const [following, setFollowing] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [liked, setLiked] = useState(
+    Boolean(currentUserId && post?.likeUserIds?.includes(currentUserId)),
+  );
+  const [likeCount, setLikeCount] = useState(post?.likes ?? 0);
+  const [commentCount, setCommentCount] = useState(post?.comments ?? 0);
   const [reported, setReported] = useState(false);
 
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -49,6 +88,69 @@ const BlogPostPage = () => {
   const [showRecs, setShowRecs] = useState(true);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const saved = Boolean(post && savedBlogs.some((blog) => blog.id === post.id));
+  const likeMutation = useMutation({
+    mutationFn: () => toggleLike(id as string),
+    onSuccess: async (result) => {
+      setLiked(result.liked);
+      setLikeCount(result.likes);
+      await queryClient.invalidateQueries({ queryKey: ["blogs"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Like failed",
+        description: error.message,
+      });
+    },
+  });
+  const saveMutation = useMutation({
+    mutationFn: () => toggleSavedBlog(post!.id),
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({ queryKey: ["saved-blogs"] });
+      toast({
+        variant: "success",
+        title: result.saved ? "Post saved" : "Removed from saved",
+        description: result.message,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Save failed",
+        description: error.message,
+      });
+    },
+  });
+  const followMutation = useMutation({
+    mutationFn: () => toggleFollowUser(post!.authorId!),
+    onSuccess: async () => {
+      await refreshUser();
+    },
+  });
+
+  const recommendedPosts =
+    recommendations.length > 0 ? recommendations : post ? getRecommendedPosts(post.id, 3) : [];
+  const sanitizedHtml = useMemo(
+    () => (post?.htmlContent ? sanitizeRichText(post.htmlContent) : ""),
+    [post?.htmlContent],
+  );
+
+  useEffect(() => {
+    setLikeCount(post?.likes ?? 0);
+    setLiked(Boolean(currentUserId && post?.likeUserIds?.includes(currentUserId)));
+  }, [currentUserId, post?.likes, post?.likeUserIds]);
+
+  useEffect(() => {
+    setCommentCount(comments.length || post?.comments || 0);
+  }, [comments.length, post?.comments]);
+  useEffect(() => {
+    if (!post || !user) {
+      setFollowing(false);
+      return;
+    }
+    setFollowing(Boolean(post.authorId && user.following?.includes(post.authorId)));
+  }, [post, user]);
 
   if (!post) {
     return (
@@ -60,7 +162,9 @@ const BlogPostPage = () => {
             <main className="flex-1 p-8 max-w-3xl mx-auto">
               <h1 className="text-2xl font-bold">Blog not found</h1>
               <p className="text-muted-foreground mt-2">
-                The post you are looking for does not exist.
+                {isLoading
+                  ? "Loading blog post..."
+                  : "The post you are looking for does not exist."}
               </p>
               <Button asChild className="mt-6 rounded-full">
                 <Link to="/">Back to dashboard</Link>
@@ -82,6 +186,19 @@ const BlogPostPage = () => {
     if (!summaryOpen) {
       setSummaryOpen(true);
     }
+  };
+
+  const handleLike = () => {
+    if (!hasStoredAuthToken()) {
+      toast({
+        variant: "destructive",
+        title: "Login required",
+        description: "Add a valid auth token in localStorage before liking blogs.",
+      });
+      return;
+    }
+
+    likeMutation.mutate();
   };
 
   return (
@@ -107,6 +224,12 @@ const BlogPostPage = () => {
 
             {/* Block 1: Header */}
             <header className="space-y-5">
+              {isError && (
+                <p className="text-sm text-muted-foreground">
+                  The backend post could not be loaded, so this page is showing local sample content where available.
+                </p>
+              )}
+
               <div className="flex flex-wrap gap-2">
                 {post.categories.map((c) => (
                   <span
@@ -141,7 +264,18 @@ const BlogPostPage = () => {
                 </div>
                 <Button
                   size="sm"
-                  onClick={() => setFollowing((v) => !v)}
+                  onClick={() => {
+                    if (!post?.authorId) return;
+                    if (!hasStoredAuthToken()) {
+                      toast({
+                        variant: "destructive",
+                        title: "Login required",
+                        description: "Please sign in before following writers.",
+                      });
+                      return;
+                    }
+                    followMutation.mutate();
+                  }}
                   className={cn(
                     "rounded-full px-5",
                     following
@@ -214,9 +348,11 @@ const BlogPostPage = () => {
 
             {/* Block 4: Description / body */}
             <article className="prose-blog space-y-5 text-foreground/90 leading-relaxed text-base md:text-lg">
-              {post.content.split(/\n\n+/).map((para, i) => (
-                <p key={i}>{para}</p>
-              ))}
+              {sanitizedHtml ? (
+                <div dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
+              ) : (
+                post.content.split(/\n\n+/).map((para, i) => <p key={i}>{para}</p>)
+              )}
             </article>
 
             {/* Block 5: Engagement actions */}
@@ -225,15 +361,17 @@ const BlogPostPage = () => {
               className="flex flex-wrap items-center gap-2 border-y border-border/60 py-4"
             >
               <button
-                onClick={() => setLiked((v) => !v)}
+                onClick={handleLike}
                 aria-pressed={liked}
+                disabled={likeMutation.isPending}
                 className={cn(
                   "inline-flex items-center gap-2 text-sm px-4 py-2 rounded-full hover:bg-accent/60 transition-smooth",
                   liked && "text-primary",
+                  likeMutation.isPending && "opacity-70",
                 )}
               >
                 <Heart className={cn("h-4 w-4", liked && "fill-current")} />
-                <span>{post.likes + (liked ? 1 : 0)}</span>
+                <span>{likeCount}</span>
               </button>
 
               <span className="inline-flex items-center gap-2 text-sm px-4 py-2 text-muted-foreground">
@@ -247,15 +385,27 @@ const BlogPostPage = () => {
                 className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-full hover:bg-accent/60 transition-smooth"
               >
                 <MessageCircle className="h-4 w-4" />
-                <span>{post.comments}</span>
+                <span>{commentCount}</span>
               </button>
 
               <button
-                onClick={() => setSaved((v) => !v)}
+                onClick={() => {
+                  if (!hasStoredAuthToken()) {
+                    toast({
+                      variant: "destructive",
+                      title: "Login required",
+                      description: "Please sign in before saving blogs.",
+                    });
+                    return;
+                  }
+                  saveMutation.mutate();
+                }}
                 aria-pressed={saved}
+                disabled={saveMutation.isPending}
                 className={cn(
                   "inline-flex items-center gap-2 text-sm px-4 py-2 rounded-full hover:bg-accent/60 transition-smooth ml-auto",
                   saved && "text-primary",
+                  saveMutation.isPending && "opacity-70",
                 )}
               >
                 <Bookmark className={cn("h-4 w-4", saved && "fill-current")} />
@@ -293,7 +443,7 @@ const BlogPostPage = () => {
 
               {showRecs && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {recommendations.map((r) => (
+                  {recommendedPosts.map((r) => (
                     <Link
                       key={r.id}
                       to={`/blog/${r.id}`}
@@ -329,6 +479,7 @@ const BlogPostPage = () => {
         onOpenChange={setCommentsOpen}
         postTitle={post.title}
         postId={post.id}
+        onCommentCountChange={setCommentCount}
       />
 
       <ReportDialog

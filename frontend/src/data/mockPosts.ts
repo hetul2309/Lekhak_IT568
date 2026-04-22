@@ -2,6 +2,7 @@ export interface BlogPost {
   id: string;
   title: string;
   author: string;
+  authorId?: string;
   authorAvatar?: string;
   preview: string;
   date: string;
@@ -14,8 +15,11 @@ export interface BlogPost {
   smartSummary: string;
   /** Long-form blog body (paragraphs separated by blank lines) */
   content: string;
+  /** Original HTML body when the source is rich text from the backend */
+  htmlContent?: string;
   views: number;
   likes: number;
+  likeUserIds?: string[];
   comments: number;
   shares: number;
   trending?: boolean;

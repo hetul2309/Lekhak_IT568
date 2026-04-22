@@ -1,6 +1,8 @@
 import { Heart, MessageCircle, Share2, Bookmark, Sparkles, Clock, ArrowRight } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { BlogPost } from "@/data/mockPosts";
@@ -13,15 +15,92 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import CommentsDialog from "@/components/comments/CommentsDialog";
+import { getCurrentUserIdFromToken, hasStoredAuthToken } from "@/lib/auth";
+import { toggleLike } from "@/lib/blog-api";
+import { fetchSavedBlogs, toggleSavedBlog } from "@/lib/social-api";
+import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   post: BlogPost;
+  onSavedChange?: (saved: boolean) => void;
 }
 
-const BlogFeedCard = ({ post }: Props) => {
-  const [liked, setLiked] = useState(false);
-  const [saved, setSaved] = useState(false);
+const BlogFeedCard = ({ post, onSavedChange }: Props) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
+  const currentUserId = getCurrentUserIdFromToken();
+  const [liked, setLiked] = useState(
+    Boolean(currentUserId && post.likeUserIds?.includes(currentUserId)),
+  );
+  const [likeCount, setLikeCount] = useState(post.likes);
+  const [commentCount, setCommentCount] = useState(post.comments);
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const { data: savedBlogs = [] } = useQuery({
+    queryKey: ["saved-blogs"],
+    queryFn: fetchSavedBlogs,
+    enabled: isAuthenticated,
+  });
+  const saved = savedBlogs.some((blog) => blog.id === post.id);
+  const likeMutation = useMutation({
+    mutationFn: () => toggleLike(post.id),
+    onSuccess: async (result) => {
+      setLiked(result.liked);
+      setLikeCount(result.likes);
+      await queryClient.invalidateQueries({ queryKey: ["blogs"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Like failed",
+        description: error.message,
+      });
+    },
+  });
+  const saveMutation = useMutation({
+    mutationFn: () => toggleSavedBlog(post.id),
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({ queryKey: ["saved-blogs"] });
+      onSavedChange?.(result.saved);
+      toast({
+        variant: "success",
+        title: result.saved ? "Post saved" : "Removed from saved",
+        description: result.message,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Save failed",
+        description: error.message,
+      });
+    },
+  });
+
+  useEffect(() => {
+    setLikeCount(post.likes);
+  }, [post.likes]);
+
+  useEffect(() => {
+    setCommentCount(post.comments);
+  }, [post.comments]);
+
+  useEffect(() => {
+    setLiked(Boolean(currentUserId && post.likeUserIds?.includes(currentUserId)));
+  }, [currentUserId, post.likeUserIds]);
+
+  const handleLike = () => {
+    if (!hasStoredAuthToken()) {
+      toast({
+        variant: "destructive",
+        title: "Login required",
+        description: "Add a valid auth token in localStorage before liking blogs.",
+      });
+      return;
+    }
+
+    likeMutation.mutate();
+  };
 
   return (
     <article className="glass rounded-2xl overflow-hidden shadow-card transition-smooth hover:shadow-glow">
@@ -119,16 +198,18 @@ const BlogFeedCard = ({ post }: Props) => {
 
             <div className="flex items-center gap-1 text-muted-foreground">
               <button
-                onClick={() => setLiked((v) => !v)}
+                onClick={handleLike}
                 aria-pressed={liked}
                 aria-label="Like"
+                disabled={likeMutation.isPending}
                 className={cn(
                   "inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full hover:bg-accent/60 transition-smooth",
                   liked && "text-primary",
+                  likeMutation.isPending && "opacity-70",
                 )}
               >
                 <Heart className={cn("h-4 w-4", liked && "fill-current")} />
-                {post.likes + (liked ? 1 : 0)}
+                {likeCount}
               </button>
               <button
                 onClick={() => setCommentsOpen(true)}
@@ -136,7 +217,7 @@ const BlogFeedCard = ({ post }: Props) => {
                 className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full hover:bg-accent/60 transition-smooth"
               >
                 <MessageCircle className="h-4 w-4" />
-                {post.comments}
+                {commentCount}
               </button>
               <button
                 aria-label="Share"
@@ -146,12 +227,24 @@ const BlogFeedCard = ({ post }: Props) => {
                 {post.shares}
               </button>
               <button
-                onClick={() => setSaved((v) => !v)}
+                onClick={() => {
+                  if (!hasStoredAuthToken()) {
+                    toast({
+                      variant: "destructive",
+                      title: "Login required",
+                      description: "Please sign in before saving blogs.",
+                    });
+                    return;
+                  }
+                  saveMutation.mutate();
+                }}
                 aria-pressed={saved}
                 aria-label="Save"
+                disabled={saveMutation.isPending}
                 className={cn(
                   "inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full hover:bg-accent/60 transition-smooth",
                   saved && "text-primary",
+                  saveMutation.isPending && "opacity-70",
                 )}
               >
                 <Bookmark className={cn("h-4 w-4", saved && "fill-current")} />
@@ -166,6 +259,7 @@ const BlogFeedCard = ({ post }: Props) => {
         onOpenChange={setCommentsOpen}
         postTitle={post.title}
         postId={post.id}
+        onCommentCountChange={setCommentCount}
       />
     </article>
   );
