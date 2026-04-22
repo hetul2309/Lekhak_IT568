@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { BookOpen, FolderOpen, CalendarClock, Pencil, Trash2 } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
@@ -25,28 +27,42 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { mockPosts, type BlogPost } from "@/data/mockPosts";
 import { useToast } from "@/hooks/use-toast";
-
-type MyBlog = BlogPost & { visibility: "published" | "draft" };
-
-// Mock: treat current user as "Maya Chen" and surface a mix of published + drafts.
-const CURRENT_AUTHOR = "Maya Chen";
-
-const seedMyBlogs = (): MyBlog[] => {
-  const mine = mockPosts.slice(0, 5).map((p, i) => ({
-    ...p,
-    author: CURRENT_AUTHOR,
-    visibility: (i % 3 === 2 ? "draft" : "published") as "published" | "draft",
-  }));
-  return mine;
-};
+import { deleteBlogById, fetchMyBlogs, type MyBlog } from "@/lib/social-api";
 
 const MyBlogs = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [blogs, setBlogs] = useState<MyBlog[]>(seedMyBlogs);
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [pendingDelete, setPendingDelete] = useState<MyBlog | null>(null);
+
+  const { data: blogs = [] } = useQuery({
+    queryKey: ["my-blogs", user?._id],
+    queryFn: () => fetchMyBlogs(user!._id),
+    enabled: Boolean(user?._id),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (blogId: string) => deleteBlogById(blogId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["my-blogs", user?._id] });
+      await queryClient.invalidateQueries({ queryKey: ["blogs"] });
+      toast({
+        title: "Blog deleted",
+        description: `"${pendingDelete?.title}" was removed.`,
+        variant: "success",
+      });
+      setPendingDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Delete failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const stats = useMemo(() => {
     const totalBlogs = blogs.length;
@@ -62,7 +78,7 @@ const MyBlogs = () => {
           month: "short",
           day: "numeric",
         })
-      : "—";
+      : "-";
     return {
       totalBlogs,
       totalCategories: categorySet.size,
@@ -72,13 +88,7 @@ const MyBlogs = () => {
 
   const handleDelete = () => {
     if (!pendingDelete) return;
-    setBlogs((prev) => prev.filter((b) => b.id !== pendingDelete.id));
-    toast({
-      title: "Blog deleted",
-      description: `"${pendingDelete.title}" was removed.`,
-      variant: "success",
-    });
-    setPendingDelete(null);
+    deleteMutation.mutate(pendingDelete.id);
   };
 
   return (
@@ -93,33 +103,16 @@ const MyBlogs = () => {
             <header className="space-y-1">
               <h1 className="text-2xl md:text-3xl font-bold tracking-tight">My Blogs</h1>
               <p className="text-sm text-muted-foreground">
-                Manage everything you've written — drafts and published pieces.
+                Manage everything you've written - drafts and published pieces.
               </p>
             </header>
 
-            {/* Block 1: Stats row */}
-            <section
-              aria-label="Blog statistics"
-              className="grid grid-cols-1 sm:grid-cols-3 gap-4"
-            >
-              <StatCard
-                icon={<BookOpen className="h-5 w-5" />}
-                label="Blogs posted"
-                value={stats.totalBlogs.toString()}
-              />
-              <StatCard
-                icon={<FolderOpen className="h-5 w-5" />}
-                label="Categories covered"
-                value={stats.totalCategories.toString()}
-              />
-              <StatCard
-                icon={<CalendarClock className="h-5 w-5" />}
-                label="Last update"
-                value={stats.lastUpdateLabel}
-              />
+            <section aria-label="Blog statistics" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <StatCard icon={<BookOpen className="h-5 w-5" />} label="Blogs posted" value={stats.totalBlogs.toString()} />
+              <StatCard icon={<FolderOpen className="h-5 w-5" />} label="Categories covered" value={stats.totalCategories.toString()} />
+              <StatCard icon={<CalendarClock className="h-5 w-5" />} label="Last update" value={stats.lastUpdateLabel} />
             </section>
 
-            {/* Block 2: Table */}
             <section aria-label="Blog list">
               <Card className="overflow-hidden border-border/60">
                 <Table>
@@ -136,19 +129,14 @@ const MyBlogs = () => {
                   <TableBody>
                     {blogs.length === 0 && (
                       <TableRow>
-                        <TableCell
-                          colSpan={6}
-                          className="text-center text-muted-foreground py-10"
-                        >
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
                           No blogs yet. Start writing your first one!
                         </TableCell>
                       </TableRow>
                     )}
                     {blogs.map((blog) => (
                       <TableRow key={blog.id}>
-                        <TableCell className="font-medium whitespace-nowrap">
-                          {blog.author}
-                        </TableCell>
+                        <TableCell className="font-medium whitespace-nowrap">{blog.author}</TableCell>
                         <TableCell className="max-w-[260px]">
                           <Link
                             to={`/blog/${blog.id}`}
@@ -160,11 +148,7 @@ const MyBlogs = () => {
                         <TableCell>
                           <div className="flex flex-wrap gap-1 max-w-[220px]">
                             {blog.categories.slice(0, 3).map((c) => (
-                              <Badge
-                                key={c}
-                                variant="secondary"
-                                className="rounded-full font-normal"
-                              >
+                              <Badge key={c} variant="secondary" className="rounded-full font-normal">
                                 {c}
                               </Badge>
                             ))}
@@ -175,9 +159,7 @@ const MyBlogs = () => {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap text-muted-foreground">
-                          {blog.date}
-                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-muted-foreground">{blog.date}</TableCell>
                         <TableCell>
                           <VisibilityBadge visibility={blog.visibility} />
                         </TableCell>
@@ -213,16 +195,12 @@ const MyBlogs = () => {
         </div>
       </div>
 
-      <AlertDialog
-        open={!!pendingDelete}
-        onOpenChange={(open) => !open && setPendingDelete(null)}
-      >
+      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this blog?</AlertDialogTitle>
             <AlertDialogDescription>
-              "{pendingDelete?.title}" will be permanently removed. This action cannot be
-              undone.
+              "{pendingDelete?.title}" will be permanently removed. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -240,15 +218,7 @@ const MyBlogs = () => {
   );
 };
 
-const StatCard = ({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) => (
+const StatCard = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
   <Card className="p-5 flex items-center gap-4 border-border/60 hover:shadow-md transition-shadow">
     <div className="h-11 w-11 rounded-xl bg-gradient-primary text-primary-foreground flex items-center justify-center shadow-glow shrink-0">
       {icon}
