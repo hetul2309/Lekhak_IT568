@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { Eye, EyeOff, Mail } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { login } = useAuth();
 
   const validate = (data: typeof form) => {
     const newErrors: typeof errors = {};
@@ -29,14 +33,23 @@ const Login = () => {
     setErrors(validate(updatedForm));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const validationErrors = validate(form);
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length === 0) {
-      localStorage.setItem("isLoggedIn", "true");
-      navigate("/");
+      try {
+        setSubmitting(true);
+        await login(form.email, form.password);
+        navigate(searchParams.get("next") || "/");
+      } catch (error) {
+        setErrors({
+          password: error instanceof Error ? error.message : "Login failed",
+        });
+      } finally {
+        setSubmitting(false);
+      }
     }
   };
 
@@ -101,8 +114,12 @@ const Login = () => {
             {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
           </div>
 
-          <button type="submit" className="w-full py-3 rounded-xl bg-gradient-primary text-primary-foreground font-semibold">
-            Login
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full py-3 rounded-xl bg-gradient-primary text-primary-foreground font-semibold disabled:opacity-70"
+          >
+            {submitting ? "Logging in..." : "Login"}
           </button>
 
         </div>

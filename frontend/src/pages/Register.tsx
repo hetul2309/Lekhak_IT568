@@ -1,11 +1,24 @@
 import { useState } from "react";
 import { Mail, Eye, EyeOff } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "@/components/auth/AuthProvider";
+
+type RegisterForm = {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+  confirm: string;
+};
+
+type RegisterErrors = Partial<Record<keyof RegisterForm, string>>;
 
 const Register = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { register } = useAuth();
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<RegisterForm>({
     name: "",
     username: "",
     email: "",
@@ -13,12 +26,13 @@ const Register = () => {
     confirm: "",
   });
 
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<RegisterErrors>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const validate = (data: typeof form) => {
-    let newErrors: any = {};
+  const validate = (data: RegisterForm) => {
+    const newErrors: RegisterErrors = {};
 
     if (!data.name) newErrors.name = "Name required";
     if (!data.username) newErrors.username = "Username required";
@@ -45,14 +59,28 @@ const Register = () => {
     setErrors(validate(updated));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validationErrors = validate(form);
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length === 0) {
-      localStorage.setItem("isLoggedIn", "true");
-      navigate("/");
+      try {
+        setSubmitting(true);
+        await register({
+          username: form.username,
+          email: form.email,
+          password: form.password,
+          displayName: form.name,
+        });
+        navigate(searchParams.get("next") || "/");
+      } catch (error) {
+        setErrors({
+          email: error instanceof Error ? error.message : "Registration failed",
+        });
+      } finally {
+        setSubmitting(false);
+      }
     }
   };
 
@@ -133,8 +161,12 @@ const Register = () => {
         </div>
         {errors.confirm && <p className="text-red-500 text-sm">{errors.confirm}</p>}
 
-        <button type="submit" className="w-full py-3 rounded-xl bg-gradient-primary text-white font-semibold">
-          Sign up
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full py-3 rounded-xl bg-gradient-primary text-white font-semibold disabled:opacity-70"
+        >
+          {submitting ? "Creating account..." : "Sign up"}
         </button>
 
         <p className="text-sm text-center">
