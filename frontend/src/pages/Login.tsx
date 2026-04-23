@@ -60,7 +60,7 @@ const Login = () => {
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-semibold text-primary">Lekhak</h1>
           <h2 className="text-xl font-semibold text-[var(--foreground)]">
-            Welcome back
+            Login to your account
           </h2>
         </div>
 
