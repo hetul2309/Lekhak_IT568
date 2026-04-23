@@ -41,6 +41,10 @@ interface BlogEditorValues {
   image?: string;
 }
 
+interface BlogEditorSubmitValues extends BlogEditorValues {
+  thumbnail?: string;
+}
+
 const Block = ({
   index,
   title,
@@ -75,6 +79,8 @@ interface BlogEditorPageProps {
   successDescription: string;
   submitNavigateTo: string;
   initialValues?: BlogEditorValues;
+  onSubmit: (values: BlogEditorSubmitValues) => Promise<void>;
+  onSaveDraft?: (values: BlogEditorSubmitValues) => Promise<void>;
 }
 
 const BlogEditorPage = ({
@@ -84,6 +90,8 @@ const BlogEditorPage = ({
   successDescription,
   submitNavigateTo,
   initialValues,
+  onSubmit,
+  onSaveDraft,
 }: BlogEditorPageProps) => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -97,6 +105,8 @@ const BlogEditorPage = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
   const [isGeneratingCats, setIsGeneratingCats] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
 
   const toggleCategory = (cat: string) => {
     setCategories((prev) => {
@@ -190,26 +200,70 @@ const BlogEditorPage = ({
     return null;
   };
 
-  const handleSubmit = () => {
+  const buildPayload = (): BlogEditorSubmitValues => ({
+    title: title.trim(),
+    content,
+    description: description.trim(),
+    categories,
+    image: imagePreview || undefined,
+    thumbnail: imagePreview || undefined,
+  });
+
+  const handleSubmit = async () => {
     const err = validate();
     if (err) {
       toast({ title: `Cannot ${submitLabel.toLowerCase()}`, description: err, variant: "destructive" });
       return;
     }
-    toast({
-      title: successTitle,
-      description: successDescription,
-      variant: "success",
-    });
-    navigate(submitNavigateTo);
+
+    try {
+      setIsSubmitting(true);
+      await onSubmit(buildPayload());
+      toast({
+        title: successTitle,
+        description: successDescription,
+        variant: "success",
+      });
+      navigate(submitNavigateTo);
+    } catch (error) {
+      toast({
+        title: `${submitLabel} failed`,
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleSaveDraft = () => {
-    toast({
-      title: "Draft saved",
-      description: "Your draft has been saved locally (mock).",
-      variant: "success",
-    });
+  const handleSaveDraft = async () => {
+    if (!onSaveDraft) {
+      toast({
+        title: "Draft saving unavailable",
+        description: "This page does not support draft saves yet.",
+        variant: "info",
+      });
+      return;
+    }
+
+    try {
+      setIsSavingDraft(true);
+      await onSaveDraft(buildPayload());
+      toast({
+        title: "Draft saved",
+        description: "Your draft has been saved.",
+        variant: "success",
+      });
+      navigate(submitNavigateTo);
+    } catch (error) {
+      toast({
+        title: "Draft save failed",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingDraft(false);
+    }
   };
 
   return (
@@ -369,13 +423,22 @@ const BlogEditorPage = ({
         </Block>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-end pt-2 pb-10">
-          <Button variant="outline" onClick={handleSaveDraft} className="gap-2">
+          <Button
+            variant="outline"
+            onClick={() => void handleSaveDraft()}
+            disabled={isSavingDraft || isSubmitting}
+            className="gap-2"
+          >
             <Save className="h-4 w-4" />
-            Save Draft
+            {isSavingDraft ? "Saving..." : "Save Draft"}
           </Button>
-          <Button onClick={handleSubmit} className="gap-2 bg-gradient-primary text-primary-foreground hover:opacity-90 shadow-glow">
+          <Button
+            onClick={() => void handleSubmit()}
+            disabled={isSubmitting || isSavingDraft}
+            className="gap-2 bg-gradient-primary text-primary-foreground hover:opacity-90 shadow-glow"
+          >
             <Send className="h-4 w-4" />
-            {submitLabel}
+            {isSubmitting ? "Saving..." : submitLabel}
           </Button>
         </div>
       </main>
