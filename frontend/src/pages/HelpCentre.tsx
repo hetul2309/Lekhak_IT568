@@ -9,64 +9,64 @@ import { cn } from "@/lib/utils";
 
 const FAQS = [
   {
-    q: "How do I create a blog?",
-    a: "Click 'Write Blog' in the top-right corner, compose your content, choose a category, and hit Publish. Drafts are auto-saved if you're logged in.",
+    q: "What are the steps to publish a new blog?",
+    a: "Simply select 'Write Blog' from the main navigation, draft your piece, assign a topic, and click Publish. Your progress is automatically saved as a draft while you are signed in.",
   },
   {
-    q: "How can I edit or delete a blog?",
-    a: "Go to 'My Blogs' from the sidebar, open the blog, and choose Edit or Delete.",
+    q: "Is it possible to modify or remove an existing post?",
+    a: "Yes. Navigate to 'My Blogs' in the side menu, select the specific post, and use the provided Edit or Delete options.",
   },
   {
-    q: "How do I change my profile details?",
-    a: "Click your profile avatar → Profile → Edit Profile.",
+    q: "Where can I update my account information?",
+    a: "Tap on your display picture, navigate to your Profile, and access the 'Manage Account Details' section.",
   },
   {
-    q: "How can I report inappropriate content?",
-    a: "Use the Report icon on any blog post or email us at shabd.setu.blogsite@gmail.com.",
+    q: "What is the process for flagging offensive material?",
+    a: "You can click the Report button available on every article, or reach out to us directly via support@lekhak.com.",
   },
   {
-    q: "What file formats can I use for blog images?",
-    a: "We support JPG, PNG, GIF, and WebP formats. Maximum file size is 5MB per image.",
+    q: "Which image types are supported for uploads?",
+    a: "You can upload JPEG, JPG, and PNG files. Please ensure each image stays under the 5MB size limit.",
   },
   {
-    q: "How do I search for blogs?",
-    a: "Use the search bar at the top of the homepage. You can search by keywords, author names, or blog titles.",
+    q: "How do I find specific stories or authors?",
+    a: "Utilize the search functionality on the dashboard to look up articles by their title, creator name, or relevant keywords.",
   },
   {
-    q: "Can I schedule my blog for later publication?",
-    a: "Yes, when writing a blog, click on 'Schedule' and choose your desired publication date and time.",
+    q: "Is there a way to publish my drafts at a later date?",
+    a: "Absolutely. Within the editor, you can select the scheduling option to set an exact time and date for your story to go live.",
   },
   {
-    q: "How do I follow other bloggers?",
-    a: "Visit any blogger's profile and click the 'Follow' button. You'll see their posts in your feed.",
+    q: "How can I subscribe to a writer's updates?",
+    a: "Navigate to the author's public profile and hit 'Follow'. Their future publications will then appear in your personal feed.",
   },
   {
-    q: "What should I do if I forget my password?",
-    a: "Click 'Forgot Password' on the login page, enter your email, and follow the reset instructions sent to your inbox.",
+    q: "How do I recover a lost password?",
+    a: "Select the 'Forgot Password' link on the sign-in screen, provide your registered email address, and check your inbox for recovery steps.",
   },
   {
-    q: "Can I export my blogs?",
-    a: "Yes, go to 'My Blogs' → select a blog → click the three dots menu → 'Export' to download as PDF or Word document.",
+    q: "Am I able to download my written content?",
+    a: "Yes, you can. Head over to 'My Blogs', open the context menu for any post, and choose the 'Export' option to save it offline.",
   },
   {
-    q: "How do I add tags to my blog posts?",
-    a: "While writing or editing a blog, scroll to the 'Tags' section and add relevant keywords separated by commas to improve discoverability.",
+    q: "How do categories and tags work?",
+    a: "During the drafting process, you can assign categories and keywords to your piece to help readers discover your work more easily.",
   },
   {
-    q: "Can I make my blog private?",
-    a: "Yes, in the blog settings, toggle 'Private' to make it visible only to you. You can change this anytime.",
+    q: "Can I hide certain articles from the public?",
+    a: "Yes. You can toggle the visibility settings to keep a post private or save it as a draft, ensuring only you have access to it.",
   },
   {
-    q: "How do I comment on other blogs?",
-    a: "Scroll to the comments section at the bottom of any blog post and type your comment. You must be logged in to comment.",
+    q: "How do I leave feedback on a story?",
+    a: "Open the comment thread at the bottom of an article to share your thoughts. Note that you need an active account to participate in discussions.",
   },
   {
-    q: "What is the character limit for blog titles?",
-    a: "Blog titles can be up to 200 characters long. Keep titles concise and descriptive for better readability.",
+    q: "Is there a length restriction for headings?",
+    a: "Titles are typically capped at around 200 characters. We recommend keeping them clear and concise for the best reader experience.",
   },
   {
-    q: "How can I see my blog statistics?",
-    a: "Go to 'My Blogs' and click on any blog to view detailed analytics including views, likes, and comments.",
+    q: "Where do I view my audience metrics?",
+    a: "You can track your performance by visiting your Profile or the 'My Blogs' section, which displays view counts, appreciations, and follower growth.",
   },
 ];
 
@@ -83,9 +83,9 @@ const HelpCentre = () => {
 
           <main className="flex-1 px-3 md:px-6 lg:px-8 py-6 space-y-6 max-w-6xl w-full mx-auto">
             <section className="space-y-1">
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Help Centre</h1>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Support Center</h1>
               <p className="text-sm text-muted-foreground">
-                Support details and quick answers, styled to match the app theme.
+                Find guidance, resolve issues, and learn how to make the most of Lekhak.
               </p>
             </section>
 
@@ -94,25 +94,25 @@ const HelpCentre = () => {
                 <div className="space-y-5">
                   <p className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-primary-foreground/80">
                     <Sparkles className="h-4 w-4" />
-                    Help center
+                    Support Hub
                   </p>
                   <div className="space-y-3 max-w-3xl">
                     <h2 className="text-3xl md:text-4xl font-bold leading-tight">
-                      How can we help you today?
+                      What do you need assistance with?
                     </h2>
                     <p className="text-sm md:text-base text-primary-foreground/85 leading-relaxed">
-                      Explore quick guides, browse frequently asked questions, or use the support button when backend handling is ready.
+                      Discover helpful tutorials, read through our most common inquiries, or reach out directly to our team for further support.
                     </p>
                   </div>
 
                   <div className="flex flex-wrap gap-3 text-sm">
                     <div className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/25 bg-primary-foreground/10 px-4 py-2 backdrop-blur-sm">
                       <BookOpen className="h-4 w-4" />
-                      100+ articles
+                      Extensive Guides
                     </div>
                     <div className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/25 bg-primary-foreground/10 px-4 py-2 backdrop-blur-sm">
                       <ShieldCheck className="h-4 w-4" />
-                      24/7 moderation
+                      Always Here
                     </div>
                   </div>
                 </div>
@@ -122,7 +122,7 @@ const HelpCentre = () => {
                     <div className="p-6 md:p-7 space-y-5">
                       <div className="space-y-2">
                         <p className="text-xs uppercase tracking-[0.35em] text-primary-foreground/70">
-                          Need priority help?
+                          Require immediate assistance?
                         </p>
                         <div className="flex items-start gap-3">
                           <div className="h-11 w-11 rounded-2xl border border-primary-foreground/20 bg-primary-foreground/10 flex items-center justify-center shrink-0">
@@ -130,10 +130,10 @@ const HelpCentre = () => {
                           </div>
                           <div className="min-w-0">
                             <p className="text-lg md:text-xl font-semibold break-all">
-                              shabd.setu.blogsite@gmail.com
+                              support@lekhak.com
                             </p>
                             <p className="mt-2 text-sm text-primary-foreground/75">
-                              Average response time: under 4 hours.
+                              We typically reply within a few hours.
                             </p>
                           </div>
                         </div>
@@ -145,7 +145,7 @@ const HelpCentre = () => {
                         className="rounded-full px-5"
                         onClick={() => undefined}
                       >
-                        Contact support
+                        Contact Us
                       </Button>
                     </div>
                   </Card>
@@ -158,11 +158,11 @@ const HelpCentre = () => {
                 <div className="p-6 md:p-8 space-y-6">
                   <div className="space-y-2">
                     <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">
-                      FAQs
+                      Common Queries
                     </p>
-                    <h2 className="text-2xl font-bold">Frequently Asked Questions</h2>
+                    <h2 className="text-2xl font-bold">Popular Questions</h2>
                     <p className="text-sm text-muted-foreground">
-                      We collected the answers to the requests we encounter most.
+                      Find quick solutions to the most common issues our writers face.
                     </p>
                   </div>
 
