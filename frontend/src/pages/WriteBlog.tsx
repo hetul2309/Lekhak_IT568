@@ -8,26 +8,26 @@ const WriteBlog = () => (
     successTitle="Blog published!"
     successDescription="Your blog is now live."
     submitNavigateTo="/my-blogs"
-    onSubmit={(values) =>
-      createBlog({
+    onSubmit={async (values) => {
+      await createBlog({
         title: values.title,
         content: values.content,
         description: values.description,
         categories: values.categories,
         thumbnail: values.thumbnail,
         status: "published",
-      })
-    }
-    onSaveDraft={(values) =>
-      createBlog({
+      });
+    }}
+    onSaveDraft={async (values) => {
+      await createBlog({
         title: values.title,
         content: values.content,
         description: values.description,
         categories: values.categories,
         thumbnail: values.thumbnail,
         status: "draft",
-      })
-    }
+      });
+    }}
   />
 );
 
