@@ -3,6 +3,7 @@ import { Mail, Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { GoogleLogin } from "@react-oauth/google";
+import { API_URL } from "@/config/api";
 
 type RegisterForm = {
   name: string;
@@ -97,7 +98,7 @@ const Register = () => {
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
       setSubmitting(true);
-      const res = await fetch("/api/auth/google", {
+      const res = await fetch(`${API_URL}/api/auth/google`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tokenId: credentialResponse.credential }),
