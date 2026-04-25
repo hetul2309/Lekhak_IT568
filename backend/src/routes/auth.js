@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
-const { googleAuth } = require('../controllers/authController');
+const { googleAuth, forgotPassword, resetPassword } = require('../controllers/authController');
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -98,5 +98,11 @@ router.get('/me', protect, (req, res) => {
 
 // POST /api/auth/google
 router.post('/google', authLimiter, googleAuth);
+
+// POST /api/auth/forgot-password
+router.post('/forgot-password', authLimiter, forgotPassword);
+
+// POST /api/auth/reset-password/:token
+router.post('/reset-password/:token', authLimiter, resetPassword);
 
 module.exports = router;
