@@ -143,7 +143,12 @@ const HelpCentre = () => {
                         type="button"
                         variant="secondary"
                         className="rounded-full px-5"
-                        onClick={() => undefined}
+                        onClick={() =>
+                          window.open(
+                            "https://mail.google.com/mail/?view=cm&fs=1&to=support@lekhak.com&su=I need assistance with Lekhak",
+                            "_blank"
+                          )
+                        }
                       >
                         Contact Us
                       </Button>
