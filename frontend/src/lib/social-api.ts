@@ -2,7 +2,10 @@ import { getAuthHeaders, type AuthUser } from "@/lib/auth";
 import type { BlogPost } from "@/data/mockPosts";
 import { mapBackendBlogToPost } from "@/lib/blog-api";
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.PROD ? "https://lekhak-api-new.onrender.com/api" : "/api")
+).replace(/\/$/, "");
 
 interface BackendAuthor {
   username?: string;

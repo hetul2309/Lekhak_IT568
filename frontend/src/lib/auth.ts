@@ -1,6 +1,9 @@
 const PRIMARY_TOKEN_STORAGE_KEY = "lekhak_token";
 const TOKEN_STORAGE_KEYS = [PRIMARY_TOKEN_STORAGE_KEY, "token", "authToken", "jwt"] as const;
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.PROD ? "https://lekhak-api-new.onrender.com/api" : "/api")
+).replace(/\/$/, "");
 
 export const buildApiUrl = (path: string) => `${API_BASE_URL}${path}`;
 

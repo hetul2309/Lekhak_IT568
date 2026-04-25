@@ -59,7 +59,10 @@ export interface BlogComment {
   postedAgo: string;
 }
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.PROD ? "https://lekhak-api-new.onrender.com/api" : "/api")
+).replace(/\/$/, "");
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1200&q=70";
 
