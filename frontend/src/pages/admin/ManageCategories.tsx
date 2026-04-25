@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { LayoutList, Plus, Trash2, Edit2, Loader2, Save, X, Sparkles } from "lucide-react";
+import { getAuthHeaders } from "@/lib/auth";
 
 export default function ManageCategories() {
   const navigate = useNavigate();
@@ -33,25 +34,17 @@ export default function ManageCategories() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editCategoryName, setEditCategoryName] = useState("");
 
-  const isAdminAuth = localStorage.getItem('isAdminAuth') === 'true';
-
-  useEffect(() => {
-    if (!isAdminAuth) {
-      toast.error("Please sign in to continue.");
-      navigate('/admin/login');
-    }
-  }, [isAdminAuth, navigate]);
-
   // Fetch categories with a mock data fallback
   useEffect(() => {
-    if (!isAdminAuth) return;
-
     const fetchCategories = async () => {
       try {
         setLoading(true);
         const response = await fetch(`/api/category/get-all-category`, {
           method: "GET",
-          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders(),
+          },
         });
         
         if (!response.ok) {
@@ -75,7 +68,7 @@ export default function ManageCategories() {
     };
 
     fetchCategories();
-  }, [isAdminAuth]);
+  }, []);
 
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) return;
@@ -84,8 +77,10 @@ export default function ManageCategories() {
       setActionInProgress('add');
       const response = await fetch(`/api/category/add-category`, {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
         body: JSON.stringify({ name: newCategoryName }),
       });
       
@@ -117,8 +112,10 @@ export default function ManageCategories() {
       setActionInProgress(`edit-${id}`);
       const response = await fetch(`/api/category/edit-category/${id}`, {
         method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
         body: JSON.stringify({ name: editCategoryName }),
       });
       
@@ -147,7 +144,10 @@ export default function ManageCategories() {
       setActionInProgress(`delete-${id}`);
       const response = await fetch(`/api/category/delete-category/${id}`, {
         method: "DELETE",
-        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
       });
       
       if (!response.ok) throw new Error("Failed to delete category.");
@@ -167,8 +167,6 @@ export default function ManageCategories() {
     setEditingId(category._id);
     setEditCategoryName(category.name);
   };
-
-  if (!isAdminAuth) return null;
 
   return (
     <div className="flex-1 flex flex-col min-w-0 w-full p-4 md:p-8 bg-background">

@@ -20,6 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Users, Search, Sparkles, Loader2 } from "lucide-react";
+import { getAuthHeaders } from "@/lib/auth";
 
 export default function ManageUsers() {
   const navigate = useNavigate();
@@ -28,25 +29,17 @@ export default function ManageUsers() {
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const isAdminAuth = localStorage.getItem('isAdminAuth') === 'true';
-
-  useEffect(() => {
-    if (!isAdminAuth) {
-      toast.error("Please sign in to continue.");
-      navigate('/admin/login');
-    }
-  }, [isAdminAuth, navigate]);
-
   // Fetch users with a mock data fallback
   useEffect(() => {
-    if (!isAdminAuth) return;
-
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/user/get-all-user`, {
+        const response = await fetch(`/api/admin/users?limit=100`, {
           method: "GET",
-          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders(),
+          },
         });
         
         if (!response.ok) {
@@ -54,7 +47,7 @@ export default function ManageUsers() {
         }
         
         const data = await response.json();
-        setUsers(Array.isArray(data?.user) ? data.user : []);
+        setUsers(Array.isArray(data?.users) ? data.users : []);
       } catch (err: any) {
         // Mock data fallback so the UI is visible for development
         setUsers([
@@ -70,7 +63,7 @@ export default function ManageUsers() {
     };
 
     fetchUsers();
-  }, [isAdminAuth]);
+  }, []);
 
   const totalUsers = useMemo(() => users.length, [users]);
   const totalBlacklisted = useMemo(
@@ -126,11 +119,12 @@ export default function ManageUsers() {
   const handleBlacklistToggle = async (userId: string, nextState: boolean) => {
     try {
       setActionInProgress(userId);
-      const response = await fetch(`/api/user/blacklist/${userId}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isBlacklisted: nextState }),
+      const response = await fetch(`/api/admin/users/${userId}/blacklist`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
       });
       
       if (!response.ok) {
@@ -237,8 +231,6 @@ export default function ManageUsers() {
       </div>
     );
   };
-
-  if (!isAdminAuth) return null;
 
   return (
     <div className="flex-1 flex flex-col min-w-0 w-full p-4 md:p-8 bg-background">

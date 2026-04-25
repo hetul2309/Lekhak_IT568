@@ -20,6 +20,7 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { getAuthHeaders } from '@/lib/auth';
 
 const ADMIN_ROUTE_FALLBACK = '/admin/dashboard';
 
@@ -52,6 +53,11 @@ const parseReportsPayload = (payload: any) => {
   return [];
 };
 
+const toReportStatus = (action: string) => {
+  if (action === 'safe') return 'dismissed';
+  return 'resolved';
+};
+
 export default function AdminReports() {
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,8 +69,11 @@ export default function AdminReports() {
     const loadReports = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`/api/report/admin/reports`, {
-          credentials: 'include',
+        const response = await fetch(`/api/admin/reports?limit=100`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders(),
+          },
         });
         
         if (!response.ok) {
@@ -116,9 +125,13 @@ export default function AdminReports() {
     setProcessingId(reportId);
 
     try {
-      const response = await fetch(`/api/report/admin/report/${reportId}/${action}`, {
-        method: 'PATCH',
-        credentials: 'include',
+      const response = await fetch(`/api/admin/reports/${reportId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({ status: toReportStatus(action) }),
       });
       
       if (!response.ok) {

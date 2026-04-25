@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Flag, LayoutList, Users, LogOut } from 'lucide-react';
+import { clearStoredAuthToken } from '@/lib/auth';
 import { NavLink } from "@/components/NavLink";
 import lekhakLogo from "@/assets/lekhak-logo.png";
 import {
@@ -30,7 +31,7 @@ function AdminSidebar() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem('isAdminAuth');
+    clearStoredAuthToken();
     navigate('/admin/login');
   };
 

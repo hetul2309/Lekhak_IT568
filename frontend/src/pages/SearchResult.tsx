@@ -26,17 +26,17 @@ export default function SearchResult() {
 
   const blogEndpoint = useMemo(() => {
     if (!hasQuery) return '';
-    return `/api/blog/search?q=${encodeURIComponent(q)}`;
+    return `/api/search?q=${encodeURIComponent(q)}&type=blogs`;
   }, [hasQuery, q]);
 
   const userEndpoint = useMemo(() => {
     if (!hasQuery) return '';
-    return `/api/user/search?query=${encodeURIComponent(q)}`;
+    return `/api/search?q=${encodeURIComponent(q)}&type=users`;
   }, [hasQuery, q]);
 
   const smartEndpoint = useMemo(() => {
     if (!hasQuery) return '';
-    return `/api/blog/smart-search?q=${encodeURIComponent(q)}`;
+    return `/api/search?q=${encodeURIComponent(q)}&type=blogs`;
   }, [hasQuery, q]);
 
   useEffect(() => {
@@ -77,8 +77,11 @@ export default function SearchResult() {
         const blogData = await blogResponse.json();
         const userData = userResponse.ok ? await userResponse.json() : { users: [] };
 
-        setBlogs(Array.isArray(blogData?.blog) ? blogData.blog : []);
-        const blogAuthors = Array.isArray(blogData?.authors) ? blogData.authors : [];
+        const blogResults = Array.isArray(blogData?.blogs) ? blogData.blogs : [];
+        setBlogs(blogResults);
+        const blogAuthors = blogResults
+          .map((blog: any) => blog?.author)
+          .filter((author: any) => author?._id);
         const usernameMatches = Array.isArray(userData?.users) ? userData.users : [];
         
         // Combine and deduplicate authors
@@ -113,7 +116,7 @@ export default function SearchResult() {
           credentials: 'include',
           signal: smartController.signal,
         });
-        const data = await response.ok ? await response.json() : null;
+        const data = response.ok ? await response.json() : null;
         
         if (data?.blogs && Array.isArray(data.blogs)) {
           setSmartBlogs(data.blogs);

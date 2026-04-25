@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Eye, EyeOff } from 'lucide-react';
+import { loginRequest, setStoredAuthToken } from '@/lib/auth';
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
@@ -9,13 +10,22 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === 'bloglekhak2629@gmail.com' && password === 'admin@1234') {
-      localStorage.setItem('isAdminAuth', 'true');
+
+    try {
+      setError('');
+      const result = await loginRequest(email, password);
+
+      if (result.role !== 'admin') {
+        setError('This account does not have admin access.');
+        return;
+      }
+
+      setStoredAuthToken(result.token);
       navigate('/admin/dashboard');
-    } else {
-      setError('Invalid admin credentials. Please try again.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invalid admin credentials. Please try again.');
     }
   };
 
