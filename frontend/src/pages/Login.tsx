@@ -143,6 +143,12 @@ const Login = () => {
             {submitting ? "Logging in..." : "Login"}
           </button>
 
+          <div className="text-center pt-2">
+            <Link to="/forgot-password" className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors">
+              Forgot your password?
+            </Link>
+          </div>
+
         </div>
 
         <p className="text-sm text-center">

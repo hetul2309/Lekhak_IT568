@@ -18,6 +18,7 @@ import Login from "./pages/Login.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ViewProfile from "./pages/ViewProfile.tsx";
 import Register from "./pages/Register.tsx";
+import ForgotPassword from "./pages/ForgotPassword.tsx";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,7 @@ const App = () => (
             <Route path="/profile/:id" element={<ViewProfile />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
