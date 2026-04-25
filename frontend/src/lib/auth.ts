@@ -138,8 +138,37 @@ export const fetchCurrentUser = async () =>
     auth: true,
   });
 
-export const googleAuthRequest = async (tokenId: string) =>
-  fetchAuthJson<AuthResponse>("/auth/google", {
+export const googleAuthRequest = async (tokenId: string) => {
+  let baseUrl =
+    import.meta.env.VITE_API_BASE_URL ||
+    (import.meta.env.PROD ? "https://lekhak-api-new.onrender.com/api" : "http://localhost:5000/api");
+
+  // If the URL is relative (like "/api" on Vercel), force the absolute Render URL
+  if (baseUrl.startsWith("/")) {
+    baseUrl = `https://lekhak-api-new.onrender.com${baseUrl}`;
+  }
+
+  // Automatically correct if /api is missing from the base URL
+  const endpoint = baseUrl.endsWith("/api")
+    ? `${baseUrl}/auth/google`
+    : `${baseUrl}/api/auth/google`;
+
+  const response = await fetch(endpoint, {
     method: "POST",
-    body: { tokenId },
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ tokenId, token: tokenId }),
   });
+
+  if (!response.ok) {
+    let message = `Request failed with status ${response.status}`;
+    try {
+      const data = (await response.json()) as { message?: string };
+      if (data.message) message = data.message;
+    } catch {}
+    throw new Error(message);
+  }
+
+  return (await response.json()) as AuthResponse;
+};
