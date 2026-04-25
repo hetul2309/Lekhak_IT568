@@ -3,6 +3,7 @@ import { Eye, EyeOff, Mail } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { GoogleLogin } from "@react-oauth/google";
+import { googleAuthRequest } from "@/lib/auth";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -59,25 +60,18 @@ const Login = () => {
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
       setSubmitting(true);
-      const res = await fetch("/api/auth/google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tokenId: credentialResponse.credential }),
-      });
-      const data = await res.json();
-      
-      if (res.ok && data.token) {
+      const data = await googleAuthRequest(credentialResponse.credential);
+
+      if (data.token) {
         localStorage.setItem("token", data.token);
         await refreshUser();
         const next = searchParams.get("next");
         const safeNext = next && /^\/[^/\\]/.test(next) ? next : "/";
         navigate(safeNext);
-      } else {
-        setErrors({ password: data.message || "Google login failed" });
       }
     } catch (error) {
-      console.error("Google auth fetch error:", error);
-      setErrors({ password: "Network error during Google login" });
+      const message = error instanceof Error ? error.message : "Google login failed";
+      setErrors({ password: message });
     } finally {
       setSubmitting(false);
     }

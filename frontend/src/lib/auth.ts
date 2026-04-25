@@ -2,6 +2,8 @@ const PRIMARY_TOKEN_STORAGE_KEY = "lekhak_token";
 const TOKEN_STORAGE_KEYS = [PRIMARY_TOKEN_STORAGE_KEY, "token", "authToken", "jwt"] as const;
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
 
+export const buildApiUrl = (path: string) => `${API_BASE_URL}${path}`;
+
 export interface AuthUser {
   _id: string;
   username: string;
@@ -131,4 +133,10 @@ export const registerRequest = async (input: {
 export const fetchCurrentUser = async () =>
   fetchAuthJson<AuthUser>("/auth/me", {
     auth: true,
+  });
+
+export const googleAuthRequest = async (tokenId: string) =>
+  fetchAuthJson<AuthResponse>("/auth/google", {
+    method: "POST",
+    body: { tokenId },
   });
