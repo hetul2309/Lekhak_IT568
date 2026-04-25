@@ -52,7 +52,8 @@ const Login = () => {
     try {
       await login(form.email, form.password);
       const next = searchParams.get("next");
-      navigate(next && next.startsWith("/") ? next : "/");
+      const safeNext = next && /^\/[^/\\]/.test(next) ? next : "/";
+      navigate(safeNext);
     } catch (err) {
       toast({
         title: "Login failed",
