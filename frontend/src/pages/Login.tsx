@@ -161,6 +161,15 @@ const Login = () => {
             Sign up
           </Link>
         </p>
+
+        <div className="pt-4 border-t border-[var(--border)]">
+          <Link
+            to="/admin/login"
+            className="flex justify-center w-full py-2.5 rounded-xl border border-[var(--border)] text-sm font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+          >
+            Admin Login
+          </Link>
+        </div>
       </form>
     </div>
   );
