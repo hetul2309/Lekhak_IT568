@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+const SUPPORT_EMAIL = import.meta.env.VITE_EMAIL_USER || "support@lekhak.com";
+
 const FAQS = [
   {
     q: "What are the steps to publish a new blog?",
@@ -22,7 +24,7 @@ const FAQS = [
   },
   {
     q: "What is the process for flagging offensive material?",
-    a: "You can click the Report button available on every article, or reach out to us directly via support@lekhak.com.",
+    a: `You can click the Report button available on every article, or reach out to us directly via ${SUPPORT_EMAIL}.`,
   },
   {
     q: "Which image types are supported for uploads?",
@@ -130,7 +132,7 @@ const HelpCentre = () => {
                           </div>
                           <div className="min-w-0">
                             <p className="text-lg md:text-xl font-semibold break-all">
-                              support@lekhak.com
+                              {SUPPORT_EMAIL}
                             </p>
                             <p className="mt-2 text-sm text-primary-foreground/75">
                               We typically reply within a few hours.
@@ -145,7 +147,7 @@ const HelpCentre = () => {
                         className="rounded-full px-5"
                         onClick={() =>
                           window.open(
-                            "https://mail.google.com/mail/?view=cm&fs=1&to=support@lekhak.com&su=I need assistance with Lekhak",
+                            `https://mail.google.com/mail/?view=cm&fs=1&to=${SUPPORT_EMAIL}&su=I need assistance with Lekhak`,
                             "_blank"
                           )
                         }
