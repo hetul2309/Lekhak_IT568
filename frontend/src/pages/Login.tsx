@@ -43,7 +43,9 @@ const Login = () => {
       try {
         setSubmitting(true);
         await login(form.email, form.password);
-        navigate(searchParams.get("next") || "/");
+        const next = searchParams.get("next");
+        const safeNext = next && /^\/[^/\\]/.test(next) ? next : "/";
+        navigate(safeNext);
       } catch (error) {
         setErrors({
           password: error instanceof Error ? error.message : "Login failed",
@@ -67,7 +69,9 @@ const Login = () => {
       if (res.ok && data.token) {
         localStorage.setItem("token", data.token);
         await refreshUser();
-        navigate(searchParams.get("next") || "/");
+        const next = searchParams.get("next");
+        const safeNext = next && /^\/[^/\\]/.test(next) ? next : "/";
+        navigate(safeNext);
       } else {
         setErrors({ password: data.message || "Google login failed" });
       }

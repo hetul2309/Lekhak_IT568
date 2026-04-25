@@ -83,7 +83,9 @@ const Register = () => {
           password: form.password,
           displayName: form.name,
         });
-        navigate(searchParams.get("next") || "/");
+        const next = searchParams.get("next");
+        const safeNext = next && /^\/[^/\\]/.test(next) ? next : "/";
+        navigate(safeNext);
       } catch (error) {
         setErrors({
           email: error instanceof Error ? error.message : "Registration failed",
@@ -107,7 +109,9 @@ const Register = () => {
       if (res.ok && data.token) {
         localStorage.setItem("token", data.token);
         await refreshUser();
-        navigate(searchParams.get("next") || "/");
+        const next = searchParams.get("next");
+        const safeNext = next && /^\/[^/\\]/.test(next) ? next : "/";
+        navigate(safeNext);
       } else {
         setErrors({ email: data.message || "Google signup failed" });
       }
