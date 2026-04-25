@@ -42,6 +42,15 @@ interface BlogFeedResponse {
   pages: number;
 }
 
+export interface BlogMutationInput {
+  title: string;
+  content: string;
+  description: string;
+  categories: string[];
+  thumbnail?: string;
+  status: "draft" | "published";
+}
+
 export interface BlogComment {
   id: string;
   author: string;
@@ -139,7 +148,7 @@ export const mapBackendBlogToPost = (blog: BackendBlog): BlogPost => {
 const fetchJson = async <T>(
   path: string,
   options?: {
-    method?: "GET" | "POST" | "DELETE";
+    method?: "GET" | "POST" | "PUT" | "DELETE";
     body?: unknown;
     auth?: boolean;
   },
@@ -196,7 +205,9 @@ export const fetchTrendingBlogs = async (limit = 4) => {
 };
 
 export const fetchBlogById = async (id: string) => {
-  const data = await fetchJson<BackendBlog>(`/blogs/${id}`);
+  const data = await fetchJson<BackendBlog>(`/blogs/${id}`, {
+    auth: true,
+  });
   return mapBackendBlogToPost(data);
 };
 
@@ -226,4 +237,24 @@ export const toggleLike = async (blogId: string) => {
     likes: data.likes,
     liked: data.message.toLowerCase().includes("removed") ? false : Boolean(currentUserId || data.likes),
   };
+};
+
+export const createBlog = async (input: BlogMutationInput) => {
+  const data = await fetchJson<BackendBlog>("/blogs", {
+    method: "POST",
+    auth: true,
+    body: input,
+  });
+
+  return mapBackendBlogToPost(data);
+};
+
+export const updateBlog = async (blogId: string, input: BlogMutationInput) => {
+  const data = await fetchJson<BackendBlog>(`/blogs/${blogId}`, {
+    method: "PUT",
+    auth: true,
+    body: input,
+  });
+
+  return mapBackendBlogToPost(data);
 };

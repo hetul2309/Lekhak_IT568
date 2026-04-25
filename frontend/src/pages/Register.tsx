@@ -1,17 +1,25 @@
 import { useState } from "react";
 import { Mail, Eye, EyeOff } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useToast } from "@/hooks/use-toast";
+import { GoogleLogin } from "@react-oauth/google";
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
+type RegisterForm = {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+  confirm: string;
+};
+
+type RegisterErrors = Partial<Record<keyof RegisterForm, string>>;
 
 const Register = () => {
   const navigate = useNavigate();
-  const { register } = useAuth();
-  const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const { register, refreshUser } = useAuth();
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<RegisterForm>({
     name: "",
     username: "",
     email: "",
@@ -19,15 +27,24 @@ const Register = () => {
     confirm: "",
   });
 
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<RegisterErrors>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const validate = (data: typeof form) => {
-    let newErrors: any = {};
+  const validate = (data: RegisterForm) => {
+    const newErrors: RegisterErrors = {};
 
-    if (!data.name) newErrors.name = "Name required";
+    const nameRegex = /^[\p{L}\s\-'.]+$/u;
+    if (!data.name.trim()) {
+      newErrors.name = "Name required";
+    } else if (data.name.trim().length < 2) {
+      newErrors.name = "Name must be at least 2 characters";
+    } else if (data.name.trim().length > 50) {
+      newErrors.name = "Name must be less than 50 characters";
+    } else if (!nameRegex.test(data.name)) {
+      newErrors.name = "Name can only contain letters, spaces, hyphens, apostrophes, and periods";
+    }
     if (!data.username) newErrors.username = "Username required";
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -52,34 +69,57 @@ const Register = () => {
     setErrors(validate(updated));
   };
 
-  const handleGoogleSignup = () => {
-    window.location.href = `${API_BASE_URL}/auth/google`;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validationErrors = validate(form);
     setErrors(validationErrors);
 
-    if (Object.keys(validationErrors).length > 0) return;
+    if (Object.keys(validationErrors).length === 0) {
+      try {
+        setSubmitting(true);
+        await register({
+          username: form.username,
+          email: form.email,
+          password: form.password,
+          displayName: form.name,
+        });
+        const next = searchParams.get("next");
+        const safeNext = next && /^\/[^/\\]/.test(next) ? next : "/";
+        navigate(safeNext);
+      } catch (error) {
+        setErrors({
+          email: error instanceof Error ? error.message : "Registration failed",
+        });
+      } finally {
+        setSubmitting(false);
+      }
+    }
+  };
 
-    setIsSubmitting(true);
+  const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
-      await register({
-        username: form.username,
-        email: form.email,
-        password: form.password,
-        displayName: form.name,
+      setSubmitting(true);
+      const res = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tokenId: credentialResponse.credential }),
       });
-      navigate("/");
-    } catch (err) {
-      toast({
-        title: "Sign up failed",
-        description: err instanceof Error ? err.message : "Could not create account. Please try again.",
-        variant: "destructive",
-      });
+      const data = await res.json();
+      
+      if (res.ok && data.token) {
+        localStorage.setItem("token", data.token);
+        await refreshUser();
+        const next = searchParams.get("next");
+        const safeNext = next && /^\/[^/\\]/.test(next) ? next : "/";
+        navigate(safeNext);
+      } else {
+        setErrors({ email: data.message || "Google signup failed" });
+      }
+    } catch (error) {
+      console.error("Google auth fetch error:", error);
+      setErrors({ email: "Network error during Google signup" });
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
@@ -92,9 +132,12 @@ const Register = () => {
           <h2 className="text-xl">Create your account</h2>
         </div>
 
-        <button type="button" onClick={handleGoogleSignup} className="w-full flex items-center justify-center gap-2 border rounded-xl py-2.5">
-          <span>Continue with Google</span>
-        </button>
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setErrors({ email: "Google Signup Failed" })}
+          />
+        </div>
 
         <div className="flex items-center gap-3">
           <div className="flex-1 border-t"></div>
@@ -107,7 +150,7 @@ const Register = () => {
           placeholder="Full name"
           value={form.name}
           onChange={(e) => handleChange("name", e.target.value)}
-          className="w-full px-4 py-2.5 rounded-xl border"
+          className={`w-full px-4 py-2.5 rounded-xl border ${form.name && !errors.name ? 'border-green-500' : ''}`}
         />
         {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
 
@@ -116,7 +159,7 @@ const Register = () => {
           placeholder="Username"
           value={form.username}
           onChange={(e) => handleChange("username", e.target.value)}
-          className="w-full px-4 py-2.5 rounded-xl border"
+          className={`w-full px-4 py-2.5 rounded-xl border ${form.username && !errors.username ? 'border-green-500' : ''}`}
         />
         {errors.username && <p className="text-red-500 text-sm">{errors.username}</p>}
 
@@ -126,7 +169,7 @@ const Register = () => {
             placeholder="Email"
             value={form.email}
             onChange={(e) => handleChange("email", e.target.value)}
-            className="w-full px-4 py-2.5 pr-10 rounded-xl border"
+            className={`w-full px-4 py-2.5 pr-10 rounded-xl border ${form.email && !errors.email ? 'border-green-500' : ''}`}
           />
           <Mail className="absolute right-3 top-1/2 -translate-y-1/2" />
         </div>
@@ -138,7 +181,7 @@ const Register = () => {
             placeholder="Password"
             value={form.password}
             onChange={(e) => handleChange("password", e.target.value)}
-            className="w-full px-4 py-2.5 pr-10 rounded-xl border"
+            className={`w-full px-4 py-2.5 pr-10 rounded-xl border ${form.password && !errors.password ? 'border-green-500' : ''}`}
           />
           <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2">
             {showPassword ? <EyeOff /> : <Eye />}
@@ -152,7 +195,7 @@ const Register = () => {
             placeholder="Confirm password"
             value={form.confirm}
             onChange={(e) => handleChange("confirm", e.target.value)}
-            className="w-full px-4 py-2.5 pr-10 rounded-xl border"
+            className={`w-full px-4 py-2.5 pr-10 rounded-xl border ${form.confirm && !errors.confirm ? 'border-green-500' : ''}`}
           />
           <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2">
             {showConfirm ? <EyeOff /> : <Eye />}
@@ -160,8 +203,12 @@ const Register = () => {
         </div>
         {errors.confirm && <p className="text-red-500 text-sm">{errors.confirm}</p>}
 
-        <button type="submit" disabled={isSubmitting} className="w-full py-3 rounded-xl bg-gradient-primary text-white font-semibold disabled:opacity-60">
-          {isSubmitting ? "Creating account..." : "Sign up"}
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full py-3 rounded-xl bg-gradient-primary text-white font-semibold disabled:opacity-70"
+        >
+          {submitting ? "Creating account..." : "Sign up"}
         </button>
 
         <p className="text-sm text-center">

@@ -15,7 +15,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { mockPosts } from "@/data/mockPosts";
 import { fetchSavedBlogs } from "@/lib/social-api";
 
 const SavedBlogs = () => {
