@@ -1,9 +1,15 @@
 import { useState } from "react";
 import { Mail, Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useToast } from "@/hooks/use-toast";
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
 
 const Register = () => {
   const navigate = useNavigate();
+  const { register } = useAuth();
+  const { toast } = useToast();
 
   const [form, setForm] = useState({
     name: "",
@@ -16,6 +22,7 @@ const Register = () => {
   const [errors, setErrors] = useState<any>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validate = (data: typeof form) => {
     let newErrors: any = {};
@@ -45,14 +52,34 @@ const Register = () => {
     setErrors(validate(updated));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleGoogleSignup = () => {
+    window.location.href = `${API_BASE_URL}/auth/google`;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validationErrors = validate(form);
     setErrors(validationErrors);
 
-    if (Object.keys(validationErrors).length === 0) {
-      localStorage.setItem("isLoggedIn", "true");
+    if (Object.keys(validationErrors).length > 0) return;
+
+    setIsSubmitting(true);
+    try {
+      await register({
+        username: form.username,
+        email: form.email,
+        password: form.password,
+        displayName: form.name,
+      });
       navigate("/");
+    } catch (err) {
+      toast({
+        title: "Sign up failed",
+        description: err instanceof Error ? err.message : "Could not create account. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -65,7 +92,7 @@ const Register = () => {
           <h2 className="text-xl">Create your account</h2>
         </div>
 
-        <button type="button" className="w-full flex items-center justify-center gap-2 border rounded-xl py-2.5">
+        <button type="button" onClick={handleGoogleSignup} className="w-full flex items-center justify-center gap-2 border rounded-xl py-2.5">
           <span>Continue with Google</span>
         </button>
 
@@ -133,8 +160,8 @@ const Register = () => {
         </div>
         {errors.confirm && <p className="text-red-500 text-sm">{errors.confirm}</p>}
 
-        <button type="submit" className="w-full py-3 rounded-xl bg-gradient-primary text-white font-semibold">
-          Sign up
+        <button type="submit" disabled={isSubmitting} className="w-full py-3 rounded-xl bg-gradient-primary text-white font-semibold disabled:opacity-60">
+          {isSubmitting ? "Creating account..." : "Sign up"}
         </button>
 
         <p className="text-sm text-center">
