@@ -1,25 +1,22 @@
 import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import BackButton from '@/components/BackButton'
 import { Textarea } from '@/components/ui/textarea'
 import { z } from 'zod'
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import slugify from 'slugify'
 import { showToast } from '@/helpers/showToast'
 import { getEnv } from '@/helpers/getEnv' 
 import { useFetch } from '@/hooks/useFetch'
-import Dropzone from 'react-dropzone'
-import Editor from '@/components/Editor'
+import JoditEditor from "jodit-react"
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { RouteBlog } from '@/helpers/RouteName'
-import { Loader2, Save, Send, Image as ImageIcon, X, FileText, Sparkles, Type, MessageSquare } from 'lucide-react'
+import { Loader2, Save, Send, Image as ImageIcon, X, Sparkles, ImagePlus, Upload, ArrowLeft } from 'lucide-react'
 import ModerationErrorList from '@/components/ModerationErrorList'
 import ModerationErrorDisplay from '@/components/ModerationErrorDisplay'
+import Block from '@/components/ui/Block'
 
 
 const MAX_CATEGORIES = 5
@@ -71,8 +68,7 @@ const AddBlog = () => {
           },
       })
 
-      const handleEditorData = (event, editor) => {
-        const data = editor.getData();
+      const handleEditorData = (data) => {
         const textContent = data.replace(/<[^>]*>/g, '').trim();
         const length = textContent.length;
         
@@ -82,8 +78,17 @@ const AddBlog = () => {
         }
         
         setContentLength(length);
-        form.setValue('blogContent', data);
+        form.setValue('blogContent', data, { shouldValidate: true, shouldDirty: true });
     }
+
+    const editor = useRef(null)
+    const fileInputRef = useRef(null)
+
+    const config = useMemo(() => ({
+        readonly: false,
+        placeholder: "Start typing your blog content here...",
+        height: 450,
+    }), [])
 
     const navigate = useNavigate()
 
@@ -439,15 +444,23 @@ const AddBlog = () => {
     }
 
   return (
-    <div className='mt-9'>
-      <div className='max-w-6xl mx-auto px-4'>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-white pb-10">
+      <header className="h-16 flex items-center gap-3 px-6 border-b bg-white/80 backdrop-blur sticky top-0 z-10">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Button>
+        <h1 className="font-semibold text-lg">Write a Blog</h1>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
         <ModerationErrorList badLines={moderationErrors.badLines} suggestions={moderationErrors.suggestions} />
         {moderationErrors.badLines?.length > 0 && (
           <ModerationErrorDisplay
             errors={moderationErrors.badLines}
             suggestions={moderationErrors.suggestions}
-                        summary={moderationErrors.summary || moderationErrors.message}
-                        onClose={() => setModerationErrors({ badLines: [], suggestions: [], message: '', summary: '' })}
+            summary={moderationErrors.summary || moderationErrors.message}
+            onClose={() => setModerationErrors({ badLines: [], suggestions: [], message: '', summary: '' })}
             onFixLine={(lineNum) => {
               if (lineNum === 1) {
                 const titleInput = document.querySelector('input[name="title"]')
@@ -457,346 +470,241 @@ const AddBlog = () => {
                   return
                 }
               }
-              if (lineNum === 2) {
-                const slugInput = document.querySelector('input[name="slug"]')
-                if (slugInput) {
-                  slugInput.focus()
-                  slugInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                  return
-                }
-              }
-              const editorFrame = document.querySelector('iframe[role="application"]')
-              if (editorFrame) {
-                editorFrame.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                try { editorFrame.contentWindow?.focus() } catch (e) {}
-              }
               showToast('info', `Please fix line ${lineNum} in the editor`)
             }}
           />
         )}
 
-        <div className='mb-8'>
-          <h1 className="text-3xl font-bold bg-linear-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-2">Create New Blog Post</h1>
-          <p className="text-gray-600 dark:text-gray-400">Share your thoughts and stories with the world</p>
+        <div className="mb-2">
           {lastSaved && (
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-gray-500">
               Last saved: {lastSaved.toLocaleTimeString()}
             </p>
           )}
         </div>
 
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit((values) => onSubmit(values, false))} className="space-y-6">
-                    
-                    {/* Title Card */}
-                    <Card className="border hover:shadow-md transition-all">
-                        <CardHeader>
-                            <div className="flex items-center gap-2">
-                                <Type className="h-5 w-5 text-violet-600" />
-                                <CardTitle>Blog Title</CardTitle>
-                            </div>
-                            <CardDescription>Give your blog post a catchy and descriptive title (max 100 characters)</CardDescription>
-                        </CardHeader>
-                        <CardContent className="pt-6">
-                            <FormField
-                                control={form.control}
-                                name="title"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-base font-semibold">Title *</FormLabel>
-                                        <FormControl>
-                                            <Input 
-                                                placeholder="Enter an engaging title for your blog post..." 
-                                                {...field} 
-                                                maxLength={100}
-                                                className="text-lg h-12"
-                                            />
-                                        </FormControl>
-                                        <p className="text-xs text-gray-500 mt-1">{field.value?.length || 0}/100 characters</p>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </CardContent>
-                    </Card>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit((values) => onSubmit(values, false))} className="space-y-6">
+            
+            {/* 1. TITLE */}
+            <Block index={1} title="Blog Title" hint="Maximum 100 characters">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input 
+                        placeholder="Give your blog a captivating title…" 
+                        {...field} 
+                        maxLength={100}
+                        className="h-12 text-lg"
+                      />
+                    </FormControl>
+                    <div className="text-right text-xs text-muted-foreground mt-2">
+                      {field.value?.length || 0}/100
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </Block>
 
-                    {/* Categories Card */}
-                    <Card className="border hover:shadow-md transition-all">
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <Sparkles className="h-5 w-5 text-violet-600" />
-                                        <CardTitle>Categories *</CardTitle>
-                                    </div>
-                                    <CardDescription>Select max {MAX_CATEGORIES} categories for your blog post</CardDescription>
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleCategorizeWithAI}
-                                    disabled={categorizing}
-                                    className="flex items-center gap-2 cursor-pointer"
-                                >
-                                    {categorizing ? (
-                                        <>
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                            Analyzing...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Sparkles className="h-4 w-4" />
-                                            AI Categorize
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-6">
-                            <FormField
-                                control={form.control}
-                                name="categories"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormControl>
-                                            <div className="flex flex-wrap gap-3">
-                                                {availableCategories.length > 0 ? (
-                                                    availableCategories.map((category) => {
-                                                        const selected = Array.isArray(field.value) ? field.value : []
-                                                        const isChecked = selected.includes(category._id)
-                                                        return (
-                                                            <label
-                                                                key={category._id}
-                                                                className={`flex items-center gap-2 px-4 py-2.5 rounded-full border cursor-pointer transition-all transform hover:scale-105 ${
-                                                                    isChecked 
-                                                                        ? 'bg-violet-600 text-white border-violet-600 shadow-sm' 
-                                                                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-violet-500 hover:bg-violet-50 hover:text-gray-900 dark:hover:bg-violet-900/20 dark:hover:text-white'
-                                                                }`}
-                                                            >
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={isChecked}
-                                                                    onChange={(event) => {
-                                                                        const checked = event.target.checked
-                                                                        const current = Array.isArray(field.value) ? field.value : []
-                                                                        if (checked && current.length >= MAX_CATEGORIES) {
-                                                                            showToast('error', `You can select up to ${MAX_CATEGORIES} categories.`)
-                                                                            event.preventDefault()
-                                                                            event.target.checked = false
-                                                                            return
-                                                                        }
-                                                                        const next = checked
-                                                                            ? Array.from(new Set([...current, category._id])).slice(0, MAX_CATEGORIES)
-                                                                            : current.filter((id) => id !== category._id)
-                                                                        field.onChange(next)
-                                                                    }}
-                                                                    className="hidden"
-                                                                />
-                                                                <span className="text-sm font-medium">
-                                                                    {category.name}
-                                                                </span>
-                                                            </label>
-                                                        )
-                                                    })
-                                                ) : (
-                                                    <span className="text-sm text-gray-500">No categories available</span>
-                                                )}
-                                            </div>
-                                        </FormControl>
-                                        <FormMessage />
-                                        <p className="pt-2 text-xs text-gray-500">You can assign up to {MAX_CATEGORIES} categories.</p>
-                                    </FormItem>
-                                )}
-                            />
-                        </CardContent>
-                    </Card>
+            {/* 2. CONTENT */}
+            <Block index={2} title="Blog Content" hint="Rich text editor with formatting options">
+              <FormField
+                control={form.control}
+                name="blogContent"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <div className="border rounded-lg overflow-hidden bg-white">
+                        <JoditEditor
+                          ref={editor}
+                          value={field.value}
+                          config={config}
+                          onBlur={newContent => handleEditorData(newContent)}
+                          onChange={newContent => handleEditorData(newContent)}
+                        />
+                      </div>
+                    </FormControl>
+                    <div className="text-right text-xs text-muted-foreground mt-2">
+                      {contentLength.toLocaleString()}/35,000 characters
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </Block>
 
-                    {/* Featured Image Card */}
-                    <Card className="border hover:shadow-md transition-all">
-                        <CardHeader>
-                            <div className="flex items-center gap-2">
-                                <ImageIcon className="h-5 w-5 text-violet-600" />
-                                <CardTitle>Featured Image *</CardTitle>
-                            </div>
-                            <CardDescription>Upload a thumbnail image for your blog post</CardDescription>
-                        </CardHeader>
-                        <CardContent className="pt-6">
-                            <Dropzone onDrop={acceptedFiles => handleFileSelection(acceptedFiles)}>
-                                {({ getRootProps, getInputProps, isDragActive }) => (
-                                    <div {...getRootProps()}>
-                                        <input {...getInputProps()} />
-                                        {filePreview ? (
-                                            <div className="relative group">
-                                                <img 
-                                                    src={filePreview} 
-                                                    alt="Preview" 
-                                                    className="w-full h-64 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-700" 
-                                                />
-                                                <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                                                    <Button
-                                                        type="button"
-                                                        variant="destructive"
-                                                        size="sm"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation()
-                                                            removeImage()
-                                                        }}
-                                                        className="flex items-center gap-2"
-                                                    >
-                                                        <X className="h-4 w-4" />
-                                                        Remove Image
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-all ${
-                                                isDragActive 
-                                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                                                    : 'border-gray-300 dark:border-gray-700 hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800'
-                                            }`}>
-                                                <ImageIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                                                <p className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                    {isDragActive ? 'Drop your image here' : 'Click to upload or drag and drop'}
-                                                </p>
-                                                <p className="text-sm text-gray-500">PNG, JPG, GIF up to 5MB</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </Dropzone>
-                        </CardContent>
-                    </Card>
+            {/* 3. DESCRIPTION */}
+            <Block 
+              index={3} 
+              title="Blog Description" 
+              hint="A short 1–2 line summary, max 300 characters"
+              action={
+                <Button
+                  type="button"
+                  onClick={handleGenerateDescription}
+                  disabled={generatingDescription}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 bg-white text-foreground border-gray-200 hover:bg-gradient-to-r hover:from-orange-100 hover:to-pink-100"
+                >
+                  {generatingDescription ? <Loader2 className="h-4 w-4 text-pink-500 animate-spin" /> : <Sparkles className="h-4 w-4 text-pink-500" />}
+                  AI Generate
+                </Button>
+              }
+            >
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Write a short summary that hooks the reader…"
+                        {...field}
+                        maxLength={300}
+                        rows={4}
+                        className="resize-none"
+                      />
+                    </FormControl>
+                    <div className="text-right text-xs text-muted-foreground mt-2">
+                      {field.value?.length || 0}/300
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </Block>
 
-                    {/* Blog Content Card */}
-                    <Card className="border hover:shadow-md transition-all">
-                        <CardHeader>
-                            <CardTitle>Blog Content *</CardTitle>
-                            <CardDescription>Write your blog post content with rich formatting (recommended: 300-2000 words, max: 35,000 characters)</CardDescription>
-                        </CardHeader>
-                        <CardContent className="pt-6">
-                            <FormField
-                                control={form.control}
-                                name="blogContent"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormControl>
-                                            <div className="border rounded-lg overflow-hidden">
-                                                <Editor initialData="" onChange={handleEditorData} />
-                                            </div>
-                                        </FormControl>
-                                        <p className="text-xs text-gray-500 mt-2">
-                                            {contentLength.toLocaleString()}/35,000 characters
-                                            {contentLength > 0 && ` (≈ ${Math.round(contentLength / 7)} words)`}
-                                        </p>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </CardContent>
-                    </Card>
+            {/* 4. CATEGORIES */}
+            <Block 
+              index={4} 
+              title="Categories" 
+              hint={`Select up to ${MAX_CATEGORIES} (${form.watch('categories')?.length || 0}/${MAX_CATEGORIES} selected)`}
+              action={
+                <Button
+                  type="button"
+                  onClick={handleCategorizeWithAI}
+                  disabled={categorizing}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 bg-white text-foreground border-gray-200 hover:bg-gradient-to-r hover:from-orange-100 hover:to-pink-100"
+                >
+                  {categorizing ? <Loader2 className="h-4 w-4 text-pink-500 animate-spin" /> : <Sparkles className="h-4 w-4 text-pink-500" />}
+                  AI Generate
+                </Button>
+              }
+            >
+              <FormField
+                control={form.control}
+                name="categories"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <div className="flex flex-wrap gap-3">
+                        {availableCategories.length > 0 ? (
+                          availableCategories.map((category) => {
+                            const selected = Array.isArray(field.value) ? field.value : []
+                            const isChecked = selected.includes(category._id)
+                            return (
+                              <button
+                                key={category._id}
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  if (!isChecked && selected.length >= MAX_CATEGORIES) {
+                                    showToast('error', `You can select up to ${MAX_CATEGORIES} categories.`);
+                                    return;
+                                  }
+                                  const next = isChecked
+                                    ? selected.filter((id) => id !== category._id)
+                                    : Array.from(new Set([...selected, category._id])).slice(0, MAX_CATEGORIES);
+                                  field.onChange(next);
+                                }}
+                                className={`px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 cursor-pointer ${
+                                  isChecked 
+                                    ? 'bg-gradient-to-r from-orange-500 via-pink-500 to-rose-500 text-white border-transparent shadow-md hover:scale-105' 
+                                    : 'bg-white text-foreground border-gray-200 hover:bg-gradient-to-r hover:from-orange-100 hover:to-pink-100'
+                                }`}
+                              >
+                                {category.name}
+                              </button>
+                            )
+                          })
+                        ) : (
+                          <span className="text-sm text-gray-500">No categories available</span>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </Block>
 
-                    {/* Description Card */}
-                    <Card className="border hover:shadow-md transition-all">
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <MessageSquare className="h-5 w-5 text-violet-600" />
-                                        <CardTitle>Blog Description</CardTitle>
-                                    </div>
-                                    <CardDescription>Write a brief description of your blog post (3-4 lines, max 300 characters)</CardDescription>
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleGenerateDescription}
-                                    disabled={generatingDescription}
-                                    className="flex items-center gap-2 cursor-pointer"
-                                >
-                                    {generatingDescription ? (
-                                        <>
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                            Generating...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Sparkles className="h-4 w-4" />
-                                            AI Generate
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-6">
-                            <FormField
-                                control={form.control}
-                                name="description"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-base font-semibold">Description</FormLabel>
-                                        <FormControl>
-                                            <Textarea 
-                                                placeholder="Enter a brief description of your blog post that will appear in previews and search results..."
-                                                {...field}
-                                                maxLength={300}
-                                                rows={4}
-                                                className="resize-none"
-                                            />
-                                        </FormControl>
-                                        <p className="text-xs text-gray-500 mt-1">{field.value?.length || 0}/300 characters</p>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </CardContent>
-                    </Card>
+            {/* 5. IMAGE */}
+            <Block index={5} title="Upload Image" hint="JPG, JPEG, PNG up to 5MB">
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept="image/jpeg, image/png, image/jpg"
+                onChange={(e) => handleFileSelection(e.target.files)}
+              />
+              {filePreview ? (
+                <div className="relative group">
+                  <img src={filePreview} className="w-full max-h-96 object-cover rounded-lg" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex justify-center items-center gap-3 transition rounded-lg">
+                    <Button type="button" onClick={() => fileInputRef.current?.click()} className="cursor-pointer">
+                      <ImagePlus className="h-4 w-4 mr-2" />
+                      Replace
+                    </Button>
+                    <Button type="button" variant="destructive" onClick={removeImage} className="cursor-pointer">
+                      <X className="h-4 w-4 mr-2" />
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed rounded-lg p-10 text-center cursor-pointer hover:border-pink-400 transition"
+                >
+                  <Upload className="mx-auto mb-3 h-6 w-6 text-pink-500" />
+                  <p>Click to upload image</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    JPG, JPEG, PNG · Max 5MB
+                  </p>
+                </div>
+              )}
+            </Block>
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-4 justify-end p-4">
-                        <Button 
-                            type="button" 
-                            variant="outline" 
-                            onClick={handleSaveDraft}
-                            disabled={isSavingDraft || isSubmitting}
-                            className="flex items-center gap-2 cursor-pointer"
-                        >
-                            {isSavingDraft ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    Saving...
-                                </>
-                            ) : (
-                                <>
-                                    <Save className="h-4 w-4" />
-                                    Save Draft
-                                </>
-                            )}
-                        </Button>
-                        <Button 
-                            type="submit" 
-                            disabled={isSubmitting || isSavingDraft}
-                            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white cursor-pointer"
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    Publishing...
-                                </>
-                            ) : (
-                                <>
-                                    <Send className="h-4 w-4" />
-                                    Publish Blog
-                                </>
-                            )}
-                        </Button>
-                        </div>
-                    </form>
-                </Form>
+            {/* BUTTONS */}
+            <div className="flex justify-end gap-3 pt-4 pb-12">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleSaveDraft} 
+                disabled={isSubmitting || isSavingDraft}
+                className="cursor-pointer"
+              >
+                {isSavingDraft ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                Save Draft
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting || isSavingDraft}
+                className="bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:opacity-90 cursor-pointer border-0"
+              >
+                {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                Publish Blog
+              </Button>
             </div>
-        </div>
-    )
+
+          </form>
+        </Form>
+      </main>
+    </div>
+  )
 }
 
 export default AddBlog
