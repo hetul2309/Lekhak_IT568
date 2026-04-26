@@ -26,7 +26,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FaRegUser } from "react-icons/fa";
 import { IoLogOutOutline } from "react-icons/io5";
-import { Users, UserPlus, FilePenLine } from "lucide-react";
+import { Users, UserPlus, FilePenLine, PenTool } from "lucide-react";
 import { removeUser } from "@/redux/user/user.slice";
 import { showToast } from "@/helpers/showToast";
 import { getEnv } from "@/helpers/getEnv";
