@@ -69,6 +69,7 @@ app.use(cookieParser());
 app.use(express.json());
 
 const defaultOrigins = [
+  'https://lekhak-tzu8.vercel.app',
   'https://Lekhak-git-deployment-manav-patels-projects-9e6ba397.vercel.app',
   'https://Lekhak.vercel.app',
   'http://localhost:5173',
