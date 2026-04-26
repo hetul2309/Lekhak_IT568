@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import logo from '@/assets/images/logo.svg'
+import logo from '@/assets/images/logo.png'
 import { Button } from '@/components/ui/button'
 import { RouteIndex } from '@/helpers/RouteName'
 
