@@ -8,13 +8,13 @@ import { GoogleAuthProvider } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBGrS92VM-WUYQOMn6TJg0ntDHxu_YWTzo",
-  authDomain: "lekhak-2eb6a.firebaseapp.com",
-  projectId: "lekhak-2eb6a",
-  storageBucket: "lekhak-2eb6a.firebasestorage.app",
-  messagingSenderId: "1083381150850",
-  appId: "1:1083381150850:web:9564be2f9c0587aeac709b",
-  measurementId: "G-CWCC9JSE02"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
