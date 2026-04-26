@@ -126,73 +126,77 @@ const CategoryDetails = () => {
       <div className="mb-10" />
 
       {categories.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {categories.map((category, index) => {
-            const { emoji, label } = getCategoryVisual(category?.name || '');
-            const postsCount = getPostCount(category);
-            const accent = ACCENT_PILLS[index % ACCENT_PILLS.length];
+        <div className="overflow-hidden rounded-[24px] border border-slate-100 bg-white shadow-[0_15px_40px_-20px_rgba(0,0,0,0.1)]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/75 text-[11px] uppercase font-bold tracking-[0.2em] text-slate-400 border-b border-slate-100">
+                  <th className="px-6 py-4 font-bold">Category</th>
+                  <th className="px-6 py-4 font-bold">Linked Posts</th>
+                  <th className="px-6 py-4 text-center font-bold">Edit</th>
+                  <th className="px-6 py-4 text-center font-bold">Delete</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {categories.map((category, index) => {
+                  const { emoji, label } = getCategoryVisual(category?.name || '');
+                  const postsCount = getPostCount(category);
 
-            return (
-              <div
-                key={category._id}
-                className="rounded-[28px] border border-slate-100 bg-white/95 p-6 shadow-[0_25px_70px_-55px_rgba(15,23,42,0.7)] transition-transform hover:-translate-y-1"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${accent} text-2xl text-white shadow-lg`}
-                    >
-                      {emoji}
-                    </div>
-                    <div>
-                      <p className="text-[11px] uppercase tracking-[0.35em] text-slate-400">Category</p>
-                      <h3 className="text-xl font-semibold text-slate-900">{label}</h3>
-                      <p className="line-clamp-2 text-sm text-slate-500">
-                        {getCategoryDescription(category)}
-                      </p>
-                    </div>
-                  </div>
-                  {category?.slug && (
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">
-                      {category.slug}
-                    </span>
-                  )}
-                </div>
+                  return (
+                    <tr key={category._id} className="hover:bg-slate-50/30 transition duration-150 ease-in-out">
+                      {/* 1. CATEGORY */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">{emoji}</span>
+                          <div>
+                            <span className="font-semibold text-slate-800 text-sm">{label}</span>
+                            {category?.slug && (
+                              <span className="ml-2 rounded-full bg-slate-50 border border-slate-200/50 px-2 py-0.5 text-[10px] text-slate-400 font-medium">
+                                {category.slug}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
 
-                <div className="my-5 border-t border-slate-100" />
+                      {/* 2. NUMBER OF LINKED POSTS */}
+                      <td className="px-6 py-4">
+                        <span className="font-bold text-slate-700 text-sm bg-orange-50 text-orange-600 px-3 py-1 rounded-full">{postsCount} posts</span>
+                      </td>
 
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Posts</p>
-                    <p className="text-3xl font-black text-slate-900">{postsCount}</p>
-                    <p className="text-xs text-slate-500">linked stories</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      asChild
-                      className="rounded-full border border-slate-200 hover:border-[#FF6A00]/40"
-                    >
-                      <Link to={RouteEditCategory(category._id)} className="flex items-center gap-2">
-                        <FiEdit className="h-4 w-4 text-slate-600" />
-                        Edit
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(category._id)}
-                      className="rounded-full border border-red-100 text-red-500 hover:border-red-200"
-                    >
-                      <FaRegTrashAlt className="h-4 w-4" />
-                      Remove
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                      {/* 3. EDIT */}
+                      <td className="px-6 py-4 text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          asChild
+                          className="rounded-full border border-slate-200 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600 h-8 text-xs cursor-pointer"
+                        >
+                          <Link to={RouteEditCategory(category._id)} className="flex items-center gap-1.5 justify-center">
+                            <FiEdit className="h-3.5 w-3.5" />
+                            Edit
+                          </Link>
+                        </Button>
+                      </td>
+
+                      {/* 4. DELETE */}
+                      <td className="px-6 py-4 text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(category._id)}
+                          className="rounded-full border border-red-100 text-red-500 hover:border-red-200 hover:bg-red-50 h-8 text-xs cursor-pointer"
+                        >
+                          <FaRegTrashAlt className="h-3.5 w-3.5 mr-1" />
+                          Delete
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
         <div className="rounded-4xl border border-dashed border-slate-200 bg-slate-50 py-20 text-center text-slate-500">
