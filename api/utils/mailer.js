@@ -3,14 +3,29 @@ dotenv.config();
 import nodemailer from 'nodemailer';
 import { Password_Reset_Email_Template, Verification_Email_Template } from "./EmailTemplate.js";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT || 587),
-  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-  secure: Number(process.env.SMTP_PORT) === 465
-});
+const smtpHost = process.env.SMTP_HOST;
+const smtpPort = process.env.SMTP_PORT || 587;
+const emailUser = process.env.SMTP_USER || process.env.EMAIL_USER;
+const emailPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
 
-const fromAddress = process.env.MAIL_FROM || process.env.FROM_EMAIL || process.env.SMTP_USER;
+let transporter;
+
+if (smtpHost) {
+  transporter = nodemailer.createTransport({
+    host: smtpHost,
+    port: Number(smtpPort),
+    auth: { user: emailUser, pass: emailPass },
+    secure: Number(smtpPort) === 465
+  });
+} else {
+  // Fallback to Gmail if no SMTP host is provided
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: emailUser, pass: emailPass }
+  });
+}
+
+const fromAddress = process.env.MAIL_FROM || process.env.FROM_EMAIL || emailUser;
 
 export const sendOtpEmail = async ({ to, code, expiresAt }) => {
   const mailOptions = {
