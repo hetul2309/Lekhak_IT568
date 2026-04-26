@@ -26,7 +26,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FaRegUser } from "react-icons/fa";
 import { IoLogOutOutline } from "react-icons/io5";
-import { Users, UserPlus, PenTool } from "lucide-react";
+import { Users, UserPlus, FilePenLine } from "lucide-react";
 import { removeUser } from "@/redux/user/user.slice";
 import { showToast } from "@/helpers/showToast";
 import { getEnv } from "@/helpers/getEnv";
@@ -133,7 +133,7 @@ const Topbar = () => {
               className="hidden sm:inline-flex items-center gap-2 rounded-full bg-gradient-primary px-5 py-2 text-xs font-semibold text-white shadow-lg shadow-orange-200 transition hover:-translate-y-0.5"
             >
               <Link to={RouteBlogAdd}>
-                <PenTool className="w-4 h-4" /> Write
+                <FilePenLine className="w-4 h-4" /> Write Blog
               </Link>
             </Button>
           )}
