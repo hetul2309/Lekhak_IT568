@@ -18,6 +18,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { RouteSignIn } from "@/helpers/RouteName";
 import { showToast } from "@/helpers/showToast";
+import { getEnv } from "@/helpers/getEnv";
 
 
 import GoogleLogin from "@/components/ui/GoogleLogin";
@@ -183,7 +184,7 @@ const SignUp = () => {
 
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/auth/username/check?username=${normalized}`,
+          `${getEnv('VITE_API_BASE_URL')}/auth/username/check?username=${normalized}`,
           { signal: controller.signal }
         );
         const data = await response.json();
@@ -259,7 +260,7 @@ const SignUp = () => {
         confirmPassword: values.confirmPassword,
       };
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/register`, {
+      const response = await fetch(`${getEnv('VITE_API_BASE_URL')}/auth/register`, {
         method: "POST",
         headers: { "Content-type": "application/json" },
         body: JSON.stringify(payload),
@@ -303,7 +304,7 @@ const SignUp = () => {
     try {
       setIsLoading(true);
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/verify-otp`, {
+      const response = await fetch(`${getEnv('VITE_API_BASE_URL')}/auth/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -330,7 +331,7 @@ const SignUp = () => {
     if (!pendingEmail) return showToast("error", "No email found. Please register again.");
     if (resendDisabled) return;
 
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/resend-otp`, {
+    const response = await fetch(`${getEnv('VITE_API_BASE_URL')}/auth/resend-otp`, {
       method: "POST",
       headers: { "Content-type": "application/json" },
       body: JSON.stringify({ email: pendingEmail }),
