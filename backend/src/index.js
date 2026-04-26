@@ -33,7 +33,13 @@ const app = express();
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || process.env.CORS_ORIGIN || '')
+const allowedOrigins = (
+  process.env.CORS_ALLOWED_ORIGINS ||
+  process.env.CORS_ALLOWED_ORIGIN ||
+  process.env.CORS_ORIGIN ||
+  process.env.FRONTEND_URL ||
+  ''
+)
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);

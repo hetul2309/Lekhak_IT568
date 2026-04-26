@@ -3,6 +3,9 @@ const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const Blog = require('../models/Blog');
 const { protect } = require('../middleware/auth');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
 
 const aiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
@@ -26,7 +29,27 @@ const CATEGORY_KEYWORDS = {
   Politics: ['politics', 'government', 'policy', 'democracy', 'election', 'law', 'rights'],
 };
 
-const categorizeText = (text) => {
+const categorizeText = async (text) => {
+  if (genAI) {
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const categoriesList = Object.keys(CATEGORY_KEYWORDS).join(', ');
+      const prompt = `Categorize the following text into up to 4 of these categories: ${categoriesList}.\n\nText: ${text.substring(0, 3000)}\n\nReturn ONLY a comma-separated list of the categories that match best, and nothing else.`;
+      
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const textResponse = response.text().trim();
+      
+      const generatedCats = textResponse.split(',')
+        .map(c => c.trim())
+        .filter(c => Object.keys(CATEGORY_KEYWORDS).includes(c));
+        
+      if (generatedCats.length > 0) return generatedCats.slice(0, 4);
+    } catch (error) {
+      console.error("Gemini AI Categorize Error:", error);
+    }
+  }
+
   const lower = text.toLowerCase();
   const matched = [];
   for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
@@ -34,10 +57,10 @@ const categorizeText = (text) => {
       matched.push(category);
     }
   }
-  return matched.length > 0 ? matched : ['General'];
+  return matched.length > 0 ? matched.slice(0, 4) : ['General'];
 };
 
-const summarizeText = (text, maxLength = 200) => {
+const summarizeText = async (text, maxLength = 200) => {
   if (typeof text !== 'string') return '';
   // Strip HTML tags by splitting on '<' and removing the tag portion (up to '>')
   // This avoids regex backtracking on long inputs
@@ -52,6 +75,23 @@ const summarizeText = (text, maxLength = 200) => {
     .join(' ')
     .replace(/\s+/g, ' ')
     .trim();
+    
+  if (genAI) {
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const prompt = `Summarize the following text in one or two short sentences, maximum ${maxLength} characters:\n\n${plain.substring(0, 5000)}`;
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      let summary = response.text().trim();
+      if (summary.length > maxLength) {
+        summary = summary.substring(0, maxLength - 3) + '...';
+      }
+      return summary;
+    } catch (error) {
+      console.error("Gemini AI Summarize Error:", error);
+    }
+  }
+
   if (plain.length <= maxLength) return plain;
   const truncated = plain.substring(0, maxLength);
   const lastSpace = truncated.lastIndexOf(' ');
@@ -67,7 +107,7 @@ router.post('/categorize', aiLimiter, protect, async (req, res) => {
     }
 
     const textToAnalyze = `${title || ''} ${description || ''} ${content || ''}`;
-    const categories = categorizeText(textToAnalyze);
+    const categories = await categorizeText(textToAnalyze);
 
     res.json({ categories });
   } catch (err) {
@@ -83,7 +123,7 @@ router.post('/summarize', aiLimiter, protect, async (req, res) => {
       return res.status(400).json({ message: 'Content is required for summarization' });
     }
 
-    const summary = summarizeText(content);
+    const summary = await summarizeText(content);
     res.json({ summary });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -101,8 +141,8 @@ router.post('/auto-tag/:blogId', aiLimiter, protect, async (req, res) => {
     }
 
     const textToAnalyze = `${blog.title} ${blog.description} ${blog.content}`;
-    const categories = categorizeText(textToAnalyze);
-    const summary = summarizeText(blog.content);
+    const categories = await categorizeText(textToAnalyze);
+    const summary = await summarizeText(blog.content);
 
     blog.categories = categories;
     blog.aiSummary = summary;

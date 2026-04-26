@@ -1,13 +1,14 @@
 import { useRef, useState, useMemo, type ChangeEvent, type DragEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import JoditEditor from "jodit-react";
-import { ArrowLeft, Sparkles, Upload, X, ImagePlus, Save, Send } from "lucide-react";
+import { ArrowLeft, Sparkles, Upload, X, ImagePlus, Save, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { buildApiUrl, getAuthHeaders } from "@/lib/auth";
 
 const TITLE_MAX = 100;
 const DESC_MAX = 300;
@@ -56,7 +57,10 @@ const BlogEditorPage = () => {
   const [categories, setCategories] = useState<string[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+
+  const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
+  const [isGeneratingCats, setIsGeneratingCats] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const toggleCategory = (cat: string) => {
     setCategories((prev) => {
@@ -77,14 +81,106 @@ const BlogEditorPage = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = () => {
+  const handleGenerateDescription = async () => {
+    if (!content) {
+      toast({ title: "Please write some content first to generate a description." });
+      return;
+    }
+    setIsGeneratingDesc(true);
+    try {
+      const res = await fetch(buildApiUrl("/ai/summarize"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({ content })
+      });
+      if (!res.ok) throw new Error("Failed to generate description");
+      const data = await res.json();
+      setDescription(data.summary.slice(0, DESC_MAX));
+      toast({ title: "Description generated successfully!" });
+    } catch (err: any) {
+      toast({ title: "Error generating description", description: err.message, variant: "destructive" });
+    } finally {
+      setIsGeneratingDesc(false);
+    }
+  };
+
+  const handleGenerateCategories = async () => {
+    if (!content && !title) {
+      toast({ title: "Please write title or content first." });
+      return;
+    }
+    setIsGeneratingCats(true);
+    try {
+      const res = await fetch(buildApiUrl("/ai/categorize"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({ title, content, description })
+      });
+      if (!res.ok) throw new Error("Failed to generate categories");
+      const data = await res.json();
+      if (data.categories?.length) {
+        setCategories(data.categories.slice(0, MAX_CATEGORIES));
+        toast({ title: "Categories generated successfully!" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error generating categories", description: err.message, variant: "destructive" });
+    } finally {
+      setIsGeneratingCats(false);
+    }
+  };
+
+  const handleSubmit = async () => {
     if (!title || !content || !description) {
       toast({ title: "All fields are required" });
       return;
     }
 
-    toast({ title: "Blog published successfully" });
-    navigate("/");
+    setIsPublishing(true);
+    try {
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("content", content);
+      formData.append("description", description);
+      categories.forEach(cat => formData.append("categories", cat));
+      if (imageFile) formData.append("image", imageFile);
+
+      let res = await fetch(buildApiUrl("/blogs"), {
+        method: "POST",
+        headers: {
+          Authorization: getAuthHeaders().Authorization || "",
+        },
+        body: formData,
+      });
+
+      // Fallback if backend doesn't support FormData (Multipart Upload)
+      if (!res.ok) {
+        res = await fetch(buildApiUrl("/blogs"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders(),
+          },
+          body: JSON.stringify({ title, content, description, categories, image: imagePreview }),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || "Failed to publish blog");
+        }
+      }
+
+      toast({ title: "Blog published successfully" });
+      navigate("/");
+    } catch (err: any) {
+      toast({ title: "Publish failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   const handleSaveDraft = () => {
@@ -137,9 +233,13 @@ const BlogEditorPage = () => {
           title="Blog Description" 
           hint={`A short 1–2 line summary, max ${DESC_MAX} characters`}
           action={
-            <Button className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 bg-white text-foreground border-gray-200 hover:bg-gradient-to-r hover:from-orange-100 hover:to-pink-100">
-              <Sparkles className="h-4 w-4 text-pink-500" />
-              AI Generate
+            <Button 
+              onClick={handleGenerateDescription}
+              disabled={isGeneratingDesc}
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 bg-white text-foreground border-gray-200 hover:bg-gradient-to-r hover:from-orange-100 hover:to-pink-100"
+            >
+              {isGeneratingDesc ? <Loader2 className="h-4 w-4 text-pink-500 animate-spin" /> : <Sparkles className="h-4 w-4 text-pink-500" />}
+              {isGeneratingDesc ? "Generating..." : "AI Generate"}
             </Button>
           }
         >
@@ -161,9 +261,13 @@ const BlogEditorPage = () => {
           title="Categories" 
           hint={`Select up to ${MAX_CATEGORIES} (${categories.length}/${MAX_CATEGORIES} selected)`}
           action={
-            <Button className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 bg-white text-foreground border-gray-200 hover:bg-gradient-to-r hover:from-orange-100 hover:to-pink-100">
-              <Sparkles className="h-4 w-4 text-pink-500" />
-              AI Generate
+            <Button 
+              onClick={handleGenerateCategories}
+              disabled={isGeneratingCats}
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 bg-white text-foreground border-gray-200 hover:bg-gradient-to-r hover:from-orange-100 hover:to-pink-100"
+            >
+              {isGeneratingCats ? <Loader2 className="h-4 w-4 text-pink-500 animate-spin" /> : <Sparkles className="h-4 w-4 text-pink-500" />}
+              {isGeneratingCats ? "Generating..." : "AI Generate"}
             </Button>
           }
         >
@@ -230,9 +334,9 @@ const BlogEditorPage = () => {
             Save Draft
           </Button>
 
-          <Button className="bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:opacity-90" onClick={handleSubmit}>
-            <Send className="h-4 w-4 mr-2" />
-            Publish Blog
+          <Button disabled={isPublishing} className="bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:opacity-90" onClick={handleSubmit}>
+            {isPublishing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+            {isPublishing ? "Publishing..." : "Publish Blog"}
           </Button>
         </div>
 
