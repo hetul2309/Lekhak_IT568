@@ -1,218 +1,210 @@
-import React, { useMemo, useState } from "react";
-import {
-  Sparkles,
-  BookOpen,
-  ShieldCheck,
-  Mail,
-} from "lucide-react";
+import React, { useState } from "react";
+import { ChevronDown, Mail, ShieldCheck, Sparkles, BookOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import BackButton from "@/components/BackButton";
 
-const FAQItem = ({ q, a, isOpen, onClick }) => (
-  <div className="mb-4 border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-    <button
-      onClick={onClick}
-      className="w-full px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 flex justify-between items-center transition-all"
-    >
-      <h3 className="text-lg font-semibold text-gray-800 text-left">{q}</h3>
-      <span
-        className={`text-2xl text-indigo-600 transition-transform ${
-          isOpen ? "rotate-180" : ""
-        }`}
-      >
-        ▼
-      </span>
-    </button>
-    {isOpen && (
-      <div className="px-6 py-4 bg-white border-t border-gray-200">
-        <p className="text-gray-700 leading-relaxed">{a}</p>
-      </div>
-    )}
-  </div>
-);
+const SUPPORT_EMAIL = import.meta.env.VITE_EMAIL_USER || "bloglekhak2629@gmail.com";
+
+const FAQS = [
+  {
+    q: "What are the steps to publish a new blog?",
+    a: "Simply select 'Write Blog' from the main navigation, draft your piece, assign a topic, and click Publish. Your progress is automatically saved as a draft while you are signed in.",
+  },
+  {
+    q: "Is it possible to modify or remove an existing post?",
+    a: "Yes. Navigate to 'My Blogs' in the side menu, select the specific post, and use the provided Edit or Delete options.",
+  },
+  {
+    q: "Where can I update my account information?",
+    a: "Tap on your display picture, navigate to your Profile, and access the 'Manage Account Details' section.",
+  },
+  {
+    q: "What is the process for flagging offensive material?",
+    a: `You can click the Report button available on every article, or reach out to us directly via ${SUPPORT_EMAIL}.`,
+  },
+  {
+    q: "Which image types are supported for uploads?",
+    a: "You can upload JPEG, JPG, and PNG files. Please ensure each image stays under the 5MB size limit.",
+  },
+  {
+    q: "How do I find specific stories or authors?",
+    a: "Utilize the search functionality on the dashboard to look up articles by their title, creator name, or relevant keywords.",
+  },
+  {
+    q: "Is there a way to publish my drafts at a later date?",
+    a: "Absolutely. Within the editor, you can select the scheduling option to set an exact time and date for your story to go live.",
+  },
+  {
+    q: "How can I subscribe to a writer's updates?",
+    a: "Navigate to the author's public profile and hit 'Follow'. Their future publications will then appear in your personal feed.",
+  },
+  {
+    q: "How do I recover a lost password?",
+    a: "Select the 'Forgot Password' link on the sign-in screen, provide your registered email address, and check your inbox for recovery steps.",
+  },
+  {
+    q: "Am I able to download my written content?",
+    a: "Yes, you can. Head over to 'My Blogs', open the context menu for any post, and choose the 'Export' option to save it offline.",
+  },
+  {
+    q: "How do categories and tags work?",
+    a: "During the drafting process, you can assign categories and keywords to your piece to help readers discover your work more easily.",
+  },
+  {
+    q: "Can I hide certain articles from the public?",
+    a: "Yes. You can toggle the visibility settings to keep a post private or save it as a draft, ensuring only you have access to it.",
+  },
+  {
+    q: "How do I leave feedback on a story?",
+    a: "Open the comment thread at the bottom of an article to share your thoughts. Note that you need an active account to participate in discussions.",
+  },
+  {
+    q: "Is there a length restriction for headings?",
+    a: "Titles are typically capped at around 200 characters. We recommend keeping them clear and concise for the best reader experience.",
+  },
+  {
+    q: "Where do I view my audience metrics?",
+    a: "You can track your performance by visiting your Profile or the 'My Blogs' section, which displays view counts, appreciations, and follower growth.",
+  },
+];
 
 export default function Help() {
-  const [openIndex, setOpenIndex] = useState(null);
-
-  const faqs = [
-    {
-      q: "How do I create a blog?",
-      a: "Click 'Write Blog' in the top-right corner, compose your content, choose a category, and hit Publish. Drafts are auto-saved if you're logged in.",
-    },
-    {
-      q: "How can I edit or delete a blog?",
-      a: "Go to 'My Blogs' from the sidebar, open the blog, and choose Edit or Delete.",
-    },
-    {
-      q: "How do I change my profile details?",
-      a: "Click your profile avatar → Profile → Edit Profile.",
-    },
-    {
-      q: "How can I report inappropriate content?",
-      a: "Use the Report icon on any blog post or email us at shabd.setu.blogsite@gmail.com.",
-    },
-    {
-      q: "What file formats can I use for blog images?",
-      a: "We support JPG, PNG, GIF, and WebP formats. Maximum file size is 5MB per image.",
-    },
-    {
-      q: "How do I search for blogs?",
-      a: "Use the search bar at the top of the homepage. You can search by keywords, author names, or blog titles.",
-    },
-    {
-      q: "Can I schedule my blog for later publication?",
-      a: "Yes, when writing a blog, click on 'Schedule' and choose your desired publication date and time.",
-    },
-    {
-      q: "How do I follow other bloggers?",
-      a: "Visit any blogger's profile and click the 'Follow' button. You'll see their posts in your feed.",
-    },
-    {
-      q: "What should I do if I forget my password?",
-      a: "Click 'Forgot Password' on the login page, enter your email, and follow the reset instructions sent to your inbox.",
-    },
-    {
-      q: "Can I export my blogs?",
-      a: "Yes, go to 'My Blogs' → select a blog → click the three dots menu → 'Export' to download as PDF or Word document.",
-    },
-    {
-      q: "How do I add tags to my blog posts?",
-      a: "While writing or editing a blog, scroll to the 'Tags' section and add relevant keywords separated by commas to improve discoverability.",
-    },
-    {
-      q: "Can I make my blog private?",
-      a: "Yes, in the blog settings, toggle 'Private' to make it visible only to you. You can change this anytime.",
-    },
-    {
-      q: "How do I comment on other blogs?",
-      a: "Scroll to the comments section at the bottom of any blog post and type your comment. You must be logged in to comment.",
-    },
-    {
-      q: "What is the character limit for blog titles?",
-      a: "Blog titles can be up to 200 characters long. Keep titles concise and descriptive for better readability.",
-    },
-    {
-      q: "How can I see my blog statistics?",
-      a: "Go to 'My Blogs' and click on any blog to view detailed analytics including views, likes, and comments.",
-    },
-  ];
-
-  const supportChannels = useMemo(
-    () => [
-      {
-        label: "Email support",
-        detail: "Drop us a note and we will respond within 24 hours.",
-        icon: <Mail className="h-5 w-5" />,
-        action: "Send email",
-        href: "mailto:shabd.setu.blogsite@gmail.com",
-      },
-    ],
-    []
-  );
+  const [openIndex, setOpenIndex] = useState(0);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-
-      <div className="max-w-8xl mx-auto px-4 sm:px-8 lg:px-12 py-10 space-y-10">
+    <div className="min-h-screen bg-background">
+      <main className="px-3 md:px-6 lg:px-8 py-6 space-y-6 max-w-6xl w-full mx-auto">
         <BackButton className="mb-4" />
-        <section className="relative overflow-hidden rounded-[40px] bg-[#FF6A00] text-white px-6 sm:px-10 py-12 shadow-[0_35px_90px_-45px_rgba(15,23,42,0.9)]">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/15 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-12 w-56 h-56 bg-orange-300/40 rounded-full blur-3xl translate-y-1/2" />
-          <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-4 max-w-3xl">
-              <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.4em] text-white/70">
+
+        <section className="space-y-1">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Support Center</h1>
+          <p className="text-sm text-muted-foreground">
+            Find guidance, resolve issues, and learn how to make the most of Lekhak.
+          </p>
+        </section>
+
+        <section className="rounded-[2rem] bg-gradient-primary text-primary-foreground shadow-glow overflow-hidden">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)] p-6 md:p-8 lg:p-10">
+            <div className="space-y-5">
+              <p className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-primary-foreground/80">
                 <Sparkles className="h-4 w-4" />
-                Help center
+                Support Hub
               </p>
-              <h1 className="text-3xl sm:text-4xl font-black leading-tight">
-                How can we help you today?
-              </h1>
-              <p className="text-base text-white/85">
-                Explore quick guides, browse popular questions, or reach out to our support crew directly from here.
-              </p>
-              <div className="flex flex-wrap gap-3 text-sm text-white/80">
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 backdrop-blur">
+              <div className="space-y-3 max-w-3xl">
+                <h2 className="text-3xl md:text-4xl font-bold leading-tight">
+                  What do you need assistance with?
+                </h2>
+                <p className="text-sm md:text-base text-primary-foreground/85 leading-relaxed">
+                  Discover helpful tutorials, read through our most common inquiries, or reach out directly to our team for further support.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-3 text-sm">
+                <div className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/25 bg-primary-foreground/10 px-4 py-2 backdrop-blur-sm">
                   <BookOpen className="h-4 w-4" />
-                  100+ articles
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 backdrop-blur">
+                  Extensive Guides
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/25 bg-primary-foreground/10 px-4 py-2 backdrop-blur-sm">
                   <ShieldCheck className="h-4 w-4" />
-                  24/7 moderation
-                </span>
+                  Always Here
+                </div>
               </div>
             </div>
-            <div className="rounded-4xl border border-white/30 bg-white/10 px-6 py-6 shadow-[0_25px_60px_-45px_rgba(15,23,42,0.8)]">
-              <p className="text-[11px] uppercase tracking-[0.35em] text-white/70">
-                Need priority help?
-              </p>
-              <p className="text-4xl font-black text-white">
-                shabd.setu.blogsite@gmail.com
-              </p>
-              <p className="text-xs text-white/65 mt-2">
-                onClick={() =>
-                  window.open(
-                    "https://mail.google.com/mail/?view=cm&fs=1&to=test@example.com&su=Hello&body=This is a test",
-                    "_blank"
-                  )
-                }
-                Average response time: under 4 hours.
-              </p>
-              <a className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-white/80 backdrop-blur transition-colors hover:border-white/60 hover:text-white cursor-pointer" 
-                onClick={() =>
-                  window.open(
-                    "https://mail.google.com/mail/?view=cm&fs=1&to=shabd.setu.blogsite@gmail.com&su=I am facing an issue.",
-                    "_blank"
-                  )
-                }
-              >
-                Contact support
-              </a>
-              
+
+            <div>
+              <Card className="h-full border-primary-foreground/20 bg-primary-foreground/10 text-primary-foreground shadow-card backdrop-blur-md">
+                <div className="p-6 md:p-7 space-y-5">
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-[0.35em] text-primary-foreground/70">
+                      Require immediate assistance?
+                    </p>
+                    <div className="flex items-start gap-3">
+                      <div className="h-11 w-11 rounded-2xl border border-primary-foreground/20 bg-primary-foreground/10 flex items-center justify-center shrink-0">
+                        <Mail className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-lg md:text-xl font-semibold break-all">
+                          {SUPPORT_EMAIL}
+                        </p>
+                        <p className="mt-2 text-sm text-primary-foreground/75">
+                          We typically reply within a few hours.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="rounded-full px-5"
+                    onClick={() =>
+                      window.open(
+                        `https://mail.google.com/mail/?view=cm&fs=1&to=${SUPPORT_EMAIL}&su=I need assistance with Lekhak`,
+                        "_blank"
+                      )
+                    }
+                  >
+                    Contact Us
+                  </Button>
+                </div>
+              </Card>
             </div>
           </div>
         </section>
 
-        <section className="rounded-4xl border border-slate-100 bg-white/95 px-6 py-8 shadow-[0_25px_70px_-55px_rgba(15,23,42,0.7)]">
-          <div className="flex flex-col gap-3">
-            <p className="text-[11px] uppercase tracking-[0.35em] text-slate-400">
-              FAQs
-            </p>
-            <h2 className="text-2xl font-bold text-slate-900">
-              Frequently Asked Questions
-            </h2>
-            <p className="text-sm text-slate-500">
-              We collected the answers to the requests we encounter most.
-            </p>
-          </div>
-          <div className="mt-8 space-y-2">
-            {faqs.map((faq, i) => (
-              <FAQItem
-                key={i}
-                q={faq.q}
-                a={faq.a}
-                isOpen={openIndex === i}
-                onClick={() => setOpenIndex(openIndex === i ? null : i)}
-              />
-            ))}
-          </div>
-        </section>
+        <section>
+          <Card className="border-border/60 bg-card/95 shadow-card">
+            <div className="p-6 md:p-8 space-y-6">
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">
+                  Common Queries
+                </p>
+                <h2 className="text-2xl font-bold">Popular Questions</h2>
+                <p className="text-sm text-muted-foreground">
+                  Find quick solutions to the most common issues our writers face.
+                </p>
+              </div>
 
-        <section className="rounded-4xl border border-dashed border-slate-200 bg-slate-50 px-6 py-8 text-center text-slate-600">
-          <p className="text-sm uppercase tracking-[0.35em] text-slate-400">
-            Still stuck?
-          </p>
-          <p className="text-2xl font-semibold text-slate-900 mt-2">
-            Tell us what to improve next.
-          </p>
-          <p className="text-sm text-slate-500 mt-2">
-            Share feedback directly from your dashboard or email us anytime.
-          </p>
-        </section>
-      </div>
+              <div className="space-y-3">
+                {FAQS.map((faq, index) => {
+                  const isOpen = openIndex === index;
 
-      <footer className="bg-slate-900 text-slate-400 py-8 px-4 text-center">
-        <p className="text-sm">Last updated: Nov 2025</p>
-        <p className="text-xs mt-2">© 2025 Lekhak. All rights reserved.</p>
-      </footer>
+                  return (
+                    <div
+                      key={faq.q}
+                      className="overflow-hidden rounded-2xl border border-border bg-background"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setOpenIndex(isOpen ? null : index)}
+                        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-smooth hover:bg-accent/40"
+                      >
+                        <span className="text-base font-semibold leading-snug">{faq.q}</span>
+                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card shrink-0">
+                          <ChevronDown
+                            className={cn(
+                              "h-4 w-4 transition-transform duration-200",
+                              isOpen && "rotate-180",
+                            )}
+                          />
+                        </span>
+                      </button>
+
+                      {isOpen && (
+                        <div className="border-t border-border px-5 py-4 text-sm leading-relaxed text-muted-foreground">
+                          {faq.a}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </Card>
+        </section>
+      </main>
     </div>
   );
 }
